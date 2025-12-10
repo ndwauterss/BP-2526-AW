@@ -56,17 +56,31 @@ Je mag deze sectie nog verder onderverdelen in subsecties als dit de structuur v
 \section{Methodologie}%
 \label{sec:methodologie}
 
-Hier beschrijf je hoe je van plan bent het onderzoek te voeren. Welke onderzoekstechniek ga je toepassen om elk van je onderzoeksvragen te beantwoorden? Gebruik je hiervoor literatuurstudie, interviews met belanghebbenden (bv.~voor requirements-analyse), experimenten, simulaties, vergelijkende studie, risico-analyse, PoC, \ldots?
+\begin{figure*}
+    \centering
+    \includegraphics[width=\textwidth]{../graphics/GanttPlanningBP}
+    \caption{\label{fig:gantt}Gantt diagram met de verschillende fasen en milestones van het onderzoek.}
+\end{figure*}
 
-Valt je onderwerp onder één van de typische soorten bachelorproeven die besproken zijn in de lessen Research Methods (bv.\ vergelijkende studie of risico-analyse)? Zorg er dan ook voor dat we duidelijk de verschillende stappen terug vinden die we verwachten in dit soort onderzoek!
+De studie wordt op een iteratieve manier uitgevoerd, waarbij er op regelmatige basis feedback gevraagd en verwerkt wordt van de belanghebbenden. Tijdens het uitvoeren van dit onderzoek zal er ook tijd gaan naar het schrijven van een onderzoeksvoorstel en de bachelorproef. Bij de planning wordt uitgegaan van 8 uur werk per week zonder rekening te houden met eventuele vakanties, weekends en feestdagen.
 
-Vermijd onderzoekstechnieken die geen objectieve, meetbare resultaten kunnen opleveren. Enquêtes, bijvoorbeeld, zijn voor een bachelorproef informatica meestal \textbf{niet geschikt}. De antwoorden zijn eerder meningen dan feiten en in de praktijk blijkt het ook bijzonder moeilijk om voldoende respondenten te vinden. Studenten die een enquête willen voeren, hebben meestal ook geen goede definitie van de populatie, waardoor ook niet kan aangetoond worden dat eventuele resultaten representatief zijn.
+\subsubsection*{Fase 1: Requirementsanalyse}
 
-Uit dit onderdeel moet duidelijk naar voor komen dat je bachelorproef ook technisch voldoen\-de diepgang zal bevatten. Het zou niet kloppen als een bachelorproef informatica ook door bv.\ een student marketing zou kunnen uitgevoerd worden.
+Het onderzoek start met een requirementsanalyse. Hierbij wordt een eerste analyse uitgevoerd op de toepassing van het huidige kostenmodel. Hieruit volgt een eerste requirementslijst die via een interview met de belanghebbenden wordt aangevuld om de verwachtingen en richting van het onderzoek te bepalen. De uitkomst na deze fase is een lijst van eisen die kan dienen om de literatuurstudie op te starten. In deze fase worden de volgende deelvragen beantwoord: (1) Wat zijn de beperkingen van de huidige toepassing? (2) Wat maakt de bestaande applicatie dynamisch en seizoensgebonden? (3) Welke architecturale en technische factoren zijn belangrijk bij de huidige toepassing? (4) Aan welke eisen moet een nieuwe oplossing voldoen om als succesvol aanzien te worden? De verwachte tijdsduur bij deze fase is 32 uur verspreid over 4 weken.
 
-Je beschrijft ook al welke tools (hardware, software, diensten, \ldots) je denkt hiervoor te gebruiken of te ontwikkelen.
+\subsubsection*{Fase 2: Literatuurstudie}
 
-Probeer ook een tijdschatting te maken. Hoe lang zal je met elke fase van je onderzoek bezig zijn en wat zijn de concrete \emph{deliverables} in elke fase?
+In de volgende stap wordt er een uitgebreide literatuurstudie uitgevoerd die alle potentiële alternatieven opsomt en waarbij rekening gehouden wordt met de eerder verkregen requirementslijst. Hierbij wordt gekeken naar container-gebaseerde oplossingen van meerdere cloud providers. Voorbeelden zijn: Azure Container Apps, Google Cloud Run en AWS Fargate. Vervolgens wordt deze longlist besproken in een opvolgmeeting met Agromanager. Hieruit komt een shortlist van één à twee alternatieven die verder vergeleken zal worden met de huidige manier van werken. Deze fase zal een antwoord geven op de deelvraag: (5) Wat zijn de belangrijkste technische verschillen tussen de mogelijke oplossingen? De tijdsinschatting voor deze fase is 80 uur verspreid over een periode van 20 weken. 
+
+\subsubsection*{Fase 3: Proof-of-Concept}
+
+Op dit moment kan de Proof-of-Concept (PoC) opgestart worden door het opzetten van de testomgevingen in de verschillende cloud omgevingen. Hierbij wordt een dynamische Function app gemigreerd naar de verschillende alternatieven. Bij deze migraties worden alle stappen en configuraties gedocumenteerd en zal er een antwoord komen op de deelvraag: (6) Wat zijn de architecturale overwegingen en uitdagingen bij een migratie naar een andere oplossing? Vervolgens worden relevante testscenario's uitgewerkt en uitgevoerd. De testen worden geautomatiseerd door middel van code in Python, waarbij variabelen gedefinieerd worden op één plaats. Er zal gekeken worden naar de prestaties en schaalbaarheid van elke toepassing. Dit houdt de volgende criteria in: cold start tijd, gemiddelde afhandelingstijd, throughput (aanvraag/seconde), CPU-gebruik, geheugengebruik en initialisatietijd van een nieuwe instantie.
+
+Deze informatie wordt verkregen via Graphana en verzameld in een CSV-bestand om een verdere analyse op uit te voeren. Elke benchmark wordt minstens 30 keer uitgevoerd per testomgeving, zodat er een normaal verdeling is van de gemiddeldes (centrale limietstelling). Om de kosten te berekenen, zullen de prijzencalculators gebruikt worden van de verschillende cloud providers. Als resultaat zijn de nodige gegevens beschikbaar waarop het advies gebaseerd kan worden, alsook alle scripts die het automatiseren van de benchmarks mogelijk maken. De tijd die hiervoor nodig zal zijn, is 80 uur verspreid over 10 weken.
+
+\subsubsection*{Fase 4: Verwerking resultaten}
+
+Tot slot wordt er een analyse op de resultaten uitgevoerd. Dit gebeurt door het berekenen van de gemiddeldes, medianen, standaarddeviaties, minimale/maximale waarden en spreiding van resultaten. Deze nieuwe data wordt vervolgens gebruikt om statistische testen op uit te voeren. Hierbij zal gekeken worden naar een afhankelijke variabele (resultaten) en een onafhankelijke variabele (cloud provider). Deze bevindingen worden gevisualiseerd via Python en zal een antwoord bieden op de deelvragen: (7) Welke impact heeft een migratie naar de mogelijke oplossingen? (8) Wat is de superieure oplossing? Aan de hand van deze analyse en andere criteria zoals aanpassingen aan het deploymentproces en security, wordt er een advies opgesteld. Hierop kunnen de belanghebbenden zich baseren om een beslissing te nemen. Deze conclusie zal ongeveer 24 uur in beslag nemen verspreid over 3 weken.
 
 %---------- Verwachte resultaten ----------------------------------------------
 \section{Verwacht resultaat, conclusie}%
