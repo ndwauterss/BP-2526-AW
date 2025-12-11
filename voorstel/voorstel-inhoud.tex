@@ -33,24 +33,82 @@ De doelstelling van dit onderzoek is om via theoretische analyse en praktisch te
 \section{Literatuurstudie}%
 \label{sec:literatuurstudie}
 
-Hier beschrijf je de \emph{state-of-the-art} rondom je gekozen onderzoeksdomein, d.w.z.\ een inleidende, doorlopende tekst over het onderzoeksdomein van je bachelorproef. Je steunt daarbij heel sterk op de professionele \emph{vakliteratuur}, en niet zozeer op populariserende teksten voor een breed publiek. Wat is de huidige stand van zaken in dit domein, en wat zijn nog eventuele open vragen (die misschien de aanleiding waren tot je onderzoeksvraag!)?
+\subsection*{Azure Functions}
 
-Je mag de titel van deze sectie ook aanpassen (literatuurstudie, stand van zaken, enz.). Zijn er al gelijkaardige onderzoeken gevoerd? Wat concluderen ze? Wat is het verschil met jouw onderzoek?
+Serverless computing ontkoppelt de ontwikkeling van een applicatie van het beheer van de onderliggende infrastructuur. Dit versnelt volgens \textcite{Ghorbian2025} het ontwikkelproces. 
 
-Verwijs bij elke introductie van een term of bewering over het domein naar de vakliteratuur, bijvoorbeeld~\autocite{Hykes2013}! Denk zeker goed na welke werken je refereert en waarom.
+Function-as-a-Service (FaaS) is onderdeel van deze serverless architectuur en zorgt ervoor dat stukjes logica uitgevoerd kunnen worden als een reactie op gebeurtenissen \autocite{Yussupov2021}. In dit onderzoek bevindt het probleemdomein zich in Azure Functions, het FaaS-platform van Microsoft. Hierbij kan er gekozen worden tussen verschillende hostingopties.
 
-Draag zorg voor correcte literatuurverwijzingen! Een bronvermelding hoort thuis \emph{binnen} de zin waar je je op die bron baseert, dus niet er buiten! Maak meteen een verwijzing als je gebruik maakt van een bron. Doe dit dus \emph{niet} aan het einde van een lange paragraaf. Baseer nooit teveel aansluitende tekst op eenzelfde bron.
+\subsection*{Dedicated Plan}
 
-Als je informatie over bronnen verzamelt in JabRef, zorg er dan voor dat alle nodige info aanwezig is om de bron terug te vinden (zoals uitvoerig besproken in de lessen Research Methods).
+De bestaande toepassing bevindt zich in het Dedicated Plan. Hierbij draaien meerdere functies op dezelfde virtuele machines en kunnen\newline grootte en aantal instanties zelf bepaald worden\footnote{\label{fn:dedicated-plan}\url{https://learn.microsoft.com/en-us/azure/azure-functions/dedicated-plan}}. Net als bij traditionele web apps delen Function apps binnen dit Plan dezelfde resources\footref{fn:dedicated-plan}.  
 
-% Voor literatuurverwijzingen zijn er twee belangrijke commando's:
-% \autocite{KEY} => (Auteur, jaartal) Gebruik dit als de naam van de auteur
-%   geen onderdeel is van de zin.
-% \textcite{KEY} => Auteur (jaartal)  Gebruik dit als de auteursnaam wel een
-%   functie heeft in de zin (bv. ``Uit onderzoek door Doll & Hill (1954) bleek
-%   ...'')
+\subsubsection*{Schaalbaarheid}
+\label{sec:scaling-dedicated}
 
-Je mag deze sectie nog verder onderverdelen in subsecties als dit de structuur van de tekst kan verduidelijken.
+Het is mogelijk om manueel te schalen naar een ander App Service Plan bij deze hosting\footref{fn:dedicated-plan}. Dit geeft echter risico op inefficiënte toewijzing van resources met hogere kosten of prestatieproblemen als gevolg \autocite{VishalHazarika2024}. In de thesis van \textcite{Falck2024} wordt beweerd dat automatisch schalen in het Dedicated Plan kan zorgen voor langere opstarttijden. Er wordt ook aangeraden om autoscale-regels in te stellen op basis van wiskundige formules om een ideaal omschakelpunt te vinden \autocite{Falck2024}.
+
+\subsubsection*{Prestaties}
+
+Microsoft\footref{fn:dedicated-plan} geeft het advies om de instelling ``Always On'' aan te zetten. Dit voorkomt dat de applicatie inactief wordt wat voor een langere uitvoeringstijd zou zorgen\footref{fn:dedicated-plan}. Dit hostingplan maakt gebruik van een vaste toekenning van resources en is op deze manier een ideale oplossing voor toepassingen met een consistente workload\footnote{\label{fn:overview-hosing-plans}\url{https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans}}. Anderzijds kan het volgens \textcite{VishalHazarika2024} net voor prestatieproblemen zorgen wanneer de workload dynamisch is en de toegewezen resources niet voldoende zijn. Deze problematiek ondervindt ook Agromanager. 
+
+\subsubsection*{Kostenefficiëntie}
+
+De kosten voor Azure Functions binnen het Dedicated Plan zijn afhankelijk van welk App Service Plan gekozen wordt, waarbij elke optie een bepaalde hoeveelheid geheugen, opslag en prijs per instantie bevat\footnote{\label{fn:pricing-windows-app-service}\url{https://azure.microsoft.com/nl-nl/pricing/details/app-service/windows}}. Door de vaste kost lijkt het minder interessant te zijn voor een functie met lange inactiviteit.
+
+\subsection*{Azure Container Apps}
+
+Azure Container Apps (ACA) maakt een combinatie mogelijk tussen serverless functies die draaien op containergebaseerde toepassingen\footnote{\url{https://learn.microsoft.com/en-us/azure/azure-functions/functions-container-apps-hosting}}. In tegenstelling tot andere hostingplannen vereist deze manier het gebruik van containers en een aangepaste CI/CD-aanpak, waarbij containerimages centraal staan \autocite{George2022}.
+
+\subsubsection*{Schaalbaarheid}
+
+Toepassingen op ACA kunnen schalen op basis van Kubernetes Event-driven Autoscaling (KEDA)\footnote{\label{fn:container-apps-overview}\url{https://learn.microsoft.com/en-us/azure/container-apps/overview}}. Dit is een lichtgewicht tool die schalen ondersteunt bij verschillende gebeurtenissen en regels\footnote{\url{https://keda.sh/docs/2.17/concepts}}. Volgens Microsoft\footnote{\label{fn:scale-app}\url{https://learn.microsoft.com/en-us/azure/container-apps/scale-app}} kan elke containergebaseerde toepassing meerdere schaalregels bevatten, waarbij schalen gebeurt van zodra er één regel bereikt wordt. Er kan ook ingesteld worden hoeveel replica's er minimum en maximum inzetbaar zijn, waarbij minstens nul gelijkstaat aan scale-to-zero\footref{fn:scale-app}.
+
+Schalen met KEDA lijkt in de praktijktesten van \textcite{NeiraCampos2024} 29\% sneller te zijn dan klassieke schaalmechanismen bij een hoge piekbelasting. Daarnaast toonden deze testen ook aan dat er een hogere foutenmarge en meer resource-verbruik was bij intensieve verwerkingen wat meer kosten kan opleveren \autocite{NeiraCampos2024}. Volgens \textcite{Yang2024} komt dit doordat CPU-tijd pas toegewezen wordt wanneer het dit vereist en kan dit leiden tot latentie. Wanneer de toepassing ingesteld staat voor scale-to-zero zorgt dit voor cold starts, aangezien de container(s) terug geïnitialiseerd moeten worden \autocite{Yang2024}. 
+
+\subsubsection*{Prestaties}
+
+Schalen met KEDA lijkt in de praktijktesten van \textcite{NeiraCampos2024} 29\% sneller te zijn dan klassieke schaalmechanismen bij een hoge piekbelasting. Daarnaast toonden deze testen ook aan dat er een hogere foutenmarge en meer resource-verbruik was bij intensieve verwerkingen wat meer kosten kan opleveren \autocite{NeiraCampos2024}. Volgens \textcite{Yang2024} komt dit doordat CPU-tijd pas toegewezen wordt wanneer het dit vereist en kan dit leiden tot latentie. Wanneer de toepassing ingesteld staat voor scale-to-zero zorgt dit voor cold starts, aangezien de container(s) terug geïnitialiseerd moeten worden \autocite{Yang2024}. 
+
+\subsubsection*{Kostenefficiëntie}
+
+In ACA kan er gekozen worden voor een Consumption Plan. Wanneer de applicatie geconfigureerd is voor scale-to-zero, worden enkel de actieve replica's in rekening gebracht\footnote{\label{fn:container-apps-details}\url{https://azure.microsoft.com/en-us/pricing/details/container-apps}}. Bij een instelling op minstens één replica, moet er ook betaald worden voor de inactieve tijd, maar tegen een lager tarief dan de actieve tijd\footref{fn:container-apps-details}. Volgens \textcite{Oudheusden2024} is dit kostenmodel ideaal voor dynamische event-driven toepassingen met afwisselende workloads en krijg je hierbij ook gratis requests, vCPU-seconden en GiB-seconden. Het Dedicated Plan binnen ACA zorgt net zoals bij Azure Functions voor voorspelde prestaties en wordt er betaald naargelang het gekozen workload-profiel \autocite{Oudheusden2024}.
+
+\subsection*{Google Cloud Run}
+
+Google Cloud Run (GCR) is een volledig beheerd applicatieplatform waarop je functies of containers kunt laten draaien\footnote{\label{fn:what-is-grc}\url{https://docs.cloud.google.com/run/docs/overview/what-is-cloud-run}}. Dit betekent dat Google alle infrastructuur regelt, waardoor de ontwikkelaar zich kan focussen op het produceren van code. In het artikel van \textcite{Mahmoudi2023} wordt vermeld dat GCR gebouwd is op Knative. Dit is een platform gebaseerd op Kubernetes en abstraheert de complexiteit die komt kijken bij het deployen, builden en beheren van serverless workloads\footnote{\label{fn:knative}\url{https://knative.dev/docs/}}.
+
+\subsubsection*{Schaalbaarheid}
+
+Dynamische workloads kunnen opgevangen worden in GCR door het automatisch schalen op basis van waargenomen belasting \autocite{Mahmoudi2023}. Volgens \textcite{Mahmoudi2023} wordt er door het performantie model een afweging gemaakt tussen aantal instanties en responstijd. Of met andere woorden: kosten versus prestaties. Het platform ondersteunt ook scale-to-zero en is zelfs de default wanneer de minimum instanties niet ingesteld worden\footnote{\label{fn:grc-autoscaling}\url{https://docs.cloud.google.com/run/docs/about-instance-autoscaling}}.
+
+\subsubsection*{Prestaties}
+
+In het artikel van \textcite{Abraham2023} wordt gewaarschuwd dat scale-to-zero een cold start kan veroorzaken en geven ze de raad om het minimum instanties op één te zetten wanneer de container meer dan tien seconden nodig heeft om op te starten. Dit kan anders voor problemen zorgen, doordat GCR requests niet langer dan tien seconden kan laten wachten \autocite{Abraham2023}.
+
+\subsubsection*{Kostenefficiëntie}
+
+In GCR krijgt men per maand een gratis hoeveelheid vCPU-seconden, GiB-seconden, requests en netwerkverkeer\footnote{\label{fn:grc-pricing}\url{https://cloud.google.com/run/pricing}}. Dit is ideaal voor testomgevingen of kleine toepassingen. De documentatie\footref{fn:grc-pricing} geeft aan dat wanneer deze gratis resources op zijn, er keuze is tussen twee prijsmodellen: request-based en instance-based (figuur: \ref{fig:instance-pricing-gcr}). Wanneer scale-to-zero is ingesteld, moet men niet betalen in geval er geen instanties lopen \autocite{Abraham2023}.
+
+\begin{figure*}
+    \centering
+    \includegraphics[width=\textwidth]{../graphics/billingGCR}
+    \caption{\label{fig:instance-pricing-gcr} Prijsconfiguratie instantietijd \footref{fn:grc-pricing}}
+\end{figure*}
+
+\subsection*{Onderlinge vergelijking}
+
+\subsubsection*{Schaalbaarheid}
+
+Automatisch schalen in het Dedicated Plan kan volgens \textcite{Falck2024} enkel via complexe autoscale-regels. Scale-to-zero wordt ook afgeraden, omdat dit een langere uitvoeringstijd veroorzaakt\footref{fn:dedicated-plan}. ACA ondersteunt scale-to-zero en schaalt geavanceerd door het gebruik van KEDA\textsuperscript{\hyperref[fn:container-apps-overview]{\ref*{fn:container-apps-overview}},\hyperref[fn:scale-app]{\ref*{fn:scale-app}}}. Volgens \textcite{Mahmoudi2023} schaalt GCR automatisch door het inschatten van waargenomen belasting. Scale-to-zero is hier ook mogelijk, maar heeft nood aan opvolging \autocite{Abraham2023}. In de context van een dynamische workload met lange inactiviteitsperioden lijkt ACA de beste oplossing op vlak van schalen door KEDA. Al kan dit niet met zekerheid gezegd worden, aangezien GCR ook een geavanceerd schaalmechanisme heeft.
+
+\subsubsection*{Prestaties}
+
+Het Dedicated Plan geeft voorspelde prestaties door de vast toegewezen resources\footref{fn:overview-hosing-plans}, maar ook kans op underprovisioning in een dynamische context \autocite{VishalHazarika2024}. ACA geeft mogelijke latentie bij een scale-to-zero instelling, maar kan goed reageren op piekbelasting \autocites{NeiraCampos2024}{Yang2024}. Scale-to-zero bij GCR kan ook een cold start veroorzaken en kan zelfs problemen geven wanneer opstart langer dan tien seconden duurt \autocite{Abraham2023}. Op vlak van prestaties lijkt het ook hier tussen ACA en GCR te gaan, omdat beiden dynamisch kunnen schalen bij piekbelasting. Hier rest enkel de vraag hoe lang een container nodig heeft om op te starten.
+
+\subsubsection*{Kostenefficiëntie}
+
+Kosten binnen het Dedicated Plan zijn vast door de vaste resources\footref{fn:pricing-windows-app-service}. ACA geeft de mogelijkheid tot een pay-per-use model of een vaste kost bij het Dedicated kostenmodel \autocite{Oudheusden2024}. GCR heeft ook twee kostenmodellen, maar beiden zijn pay-per-use\footref{fn:grc-pricing}. We kunnen vermoeden dat het Dedicated Plan minderwaardig is op vlak van kostenefficiëntie in deze context. Momenteel is het echter moeilijk om te zeggen of ACA minder kost dan GCR of vice versa.
 
 %---------- Methodologie ------------------------------------------------------
 \section{Methodologie}%
