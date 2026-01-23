@@ -7,14 +7,15 @@ Dit voorstel is gebaseerd op het onderzoeksvoorstel dat werd geschreven in het k
 \section{Inleiding}%
 \label{sec:inleiding}
 
-Serverless computing maakt het mogelijk voor ontwikkelaars om toepassingen te bouwen zonder het beheer van infrastructuur. Azure Functions is hierin een populair platform en wordt door Agromanager gebruikt voor functies met een dynamische workload binnen een App Service Plan. Deze service draait continu, maar wordt slechts voor korte perioden in het jaar gebruikt. Hierdoor ondervinden zij onnodige kosten en prestatieproblemen bij hoge belasting.
+Serverless computing maakt het mogelijk voor ontwikkelaars om toepassingen te bouwen zonder het beheer van infrastructuur. \textcolor{purple}{Azure Functions} is hierin een populair platform en \textcolor{purple}{wordt door Agromanager gebruikt voor functies met een dynamische workload binnen een App Service Plan. Deze service draait continu, maar wordt slechts voor korte perioden in het jaar gebruikt. Hierdoor ondervinden zij onnodige kosten en prestatieproblemen bij hoge belasting.}
 
 Door de introductie van nieuwe alternatieven die mogelijks beter aansluiten bij deze toepassingen, stelt Agromanager zich de vraag:
 
-\textbf{In welke mate kunnen serverless container-gebaseerde oplossingen bij verschillende cloudproviders de schaalbaarheid, prestaties en kostenefficiëntie verbeteren voor Azure Functions met dynamische en seizoensgebonden workload?}
+\textcolor{purple}{\textbf{In welke mate kunnen serverless container-gebaseerde oplossingen bij verschillende cloudproviders de schaalbaarheid, prestaties en kostenefficiëntie verbeteren voor Azure Functions met dynamische en seizoensgebonden workload?}}
 
 Om deze probleemstelling op te lossen, worden volgende deelvragen onderzocht:
 
+\textcolor{purple}{
 \begin{enumerate}
     \item Wat zijn de beperkingen van de huidige toepassing?
     \item Wat maakt de bestaande applicatie dynamisch en seizoensgebonden? 
@@ -25,6 +26,7 @@ Om deze probleemstelling op te lossen, worden volgende deelvragen onderzocht:
     \item Welke impact heeft een migratie naar de mogelijke oplossingen? 
     \item Wat is de superieure oplossing?
 \end{enumerate} 
+}
 
 De doelstelling van dit onderzoek is om via theoretische analyse en praktisch testen een onderbouwd advies te geven aan Agromanager. Concreet zal er een Proof-of-Concept ontwikkeld worden, waarbij er een vergelijkende analyse uitgevoerd zal worden op de resultaten. Dit zal aantonen wat de impact is van een migratie naar alternatief A of B in termen van kosten, schaalbaarheid en prestaties.
 
