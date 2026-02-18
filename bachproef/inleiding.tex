@@ -5,32 +5,44 @@
 \chapter{\IfLanguageName{dutch}{Inleiding}{Introduction}}%
 \label{ch:inleiding}
 
-De inleiding moet de lezer net genoeg informatie verschaffen om het onderwerp te begrijpen en in te zien waarom de onderzoeksvraag de moeite waard is om te onderzoeken. In de inleiding ga je literatuurverwijzingen beperken, zodat de tekst vlot leesbaar blijft. Je kan de inleiding verder onderverdelen in secties als dit de tekst verduidelijkt. Zaken die aan bod kunnen komen in de inleiding~\autocite{Pollefliet2011}:
+Serverless computing maakt het voor ontwikkelaars mogelijk om toepassingen te bouwen zonder het beheer van infrastructuur. Dit paradigma heeft echter ook nadelen. Doordat het beheer, zoals rekenkracht, uitbesteed wordt aan de providers, hebben ontwikkelaars en bijgevolg ook de IT-bedrijven minder controle over de prestaties en kosten van hun functionaliteiten. Dit kan zich vertalen in prestatieproblemen en onnodige kosten.
 
-\begin{itemize}
-  \item context, achtergrond
-  \item afbakenen van het onderwerp
-  \item verantwoording van het onderwerp, methodologie
-  \item probleemstelling
-  \item onderzoeksdoelstelling
-  \item onderzoeksvraag
-  \item \ldots
-\end{itemize}
+Tegelijkertijd dienen zich nieuwe technologieën aan die inspelen op deze pijnpunten en die ook de flexibiliteit vergroten. Hoewel deze alternatieven veelbelovend zijn, hebben veel IT-organisaties moeite met het maken van een keuze uit de steeds groter wordende opties voor hun architectuur.
 
 \section{\IfLanguageName{dutch}{Probleemstelling}{Problem Statement}}%
 \label{sec:probleemstelling}
 
-Uit je probleemstelling moet duidelijk zijn dat je onderzoek een meerwaarde heeft voor een concrete doelgroep. De doelgroep moet goed gedefinieerd en afgelijnd zijn. Doelgroepen als ``bedrijven,'' ``KMO's'', systeembeheerders, enz.~zijn nog te vaag. Als je een lijstje kan maken van de personen/organisaties die een meerwaarde zullen vinden in deze bachelorproef (dit is eigenlijk je steekproefkader), dan is dat een indicatie dat de doelgroep goed gedefinieerd is. Dit kan een enkel bedrijf zijn of zelfs één persoon (je co-promotor/opdrachtgever).
+Zo ondervindt ook Agromanager, een IT-bedrijf dat actief is in de fruitteeltsector. Zij gebruiken serverless functies die een dynamische werkbelasting hebben in een App Service Plan. Deze toepassing draait continu en wordt slechts gebruikt in korte, specifieke perioden in het jaar. Wanneer het seizoen aangebroken is dat de functies intensief gebruikt worden, ondervinden zij prestatieproblemen. Dit duidt op 2 problemen: 
+
+\begin{enumerate}
+    \item onnodige kosten door overprovisionering van bronnen
+    \item prestatieproblemen door onderprovisionering van bronnen
+\end{enumerate}
 
 \section{\IfLanguageName{dutch}{Onderzoeksvraag}{Research question}}%
 \label{sec:onderzoeksvraag}
 
-Wees zo concreet mogelijk bij het formuleren van je onderzoeksvraag. Een onderzoeksvraag is trouwens iets waar nog niemand op dit moment een antwoord heeft (voor zover je kan nagaan). Het opzoeken van bestaande informatie (bv. ``welke tools bestaan er voor deze toepassing?'') is dus geen onderzoeksvraag. Je kan de onderzoeksvraag verder specifiëren in deelvragen. Bv.~als je onderzoek gaat over performantiemetingen, dan 
+Door de introductie van nieuwe alternatieven die mogelijks beter aansluiten bij deze toepassingen, stelt Agromanager zich de vraag:
+
+\textbf{In welke mate kunnen serverless container-gebaseerde oplossingen bij verschillende cloudproviders de schaalbaarheid, prestaties en kostenefficiëntie verbeteren voor Azure Functions met dynamische en seizoensgebonden workload?}
+
+Om deze probleemstelling op te lossen, worden volgende deelvragen onderzocht:
+
+\begin{enumerate}
+    \item Wat zijn de beperkingen van de huidige toepassing?
+    \item Wat maakt de bestaande applicatie dynamisch en seizoensgebonden? 
+    \item Welke architecturale en technische factoren zijn belangrijk bij de huidige toepassing? 
+    \item Aan welke eisen moet een nieuwe oplossing voldoen om als succesvol aanzien te worden?
+    \item Wat zijn de belangrijkste technische verschillen tussen de mogelijke oplossingen?
+    \item Wat zijn de architecturale overwegingen en uitdagingen bij een migratie naar een andere oplossing?
+    \item Welke impact heeft een migratie naar de mogelijke oplossingen? 
+    \item Wat is de superieure oplossing?
+\end{enumerate} 
 
 \section{\IfLanguageName{dutch}{Onderzoeksdoelstelling}{Research objective}}%
 \label{sec:onderzoeksdoelstelling}
 
-Wat is het beoogde resultaat van je bachelorproef? Wat zijn de criteria voor succes? Beschrijf die zo concreet mogelijk. Gaat het bv.\ om een proof-of-concept, een prototype, een verslag met aanbevelingen, een vergelijkende studie, enz.
+De doelstelling van dit onderzoek is om via theoretische analyse en praktisch testen een onderbouwd advies te geven aan Agromanager. Concreet zal er een Proof-of-Concept ontwikkeld worden, waarbij er een vergelijkende analyse uitgevoerd zal worden op de resultaten. Dit zal aantonen wat de impact is van een migratie naar alternatief A of B in termen van kosten, schaalbaarheid en prestaties.
 
 \section{\IfLanguageName{dutch}{Opzet van deze bachelorproef}{Structure of this bachelor thesis}}%
 \label{sec:opzet-bachelorproef}
