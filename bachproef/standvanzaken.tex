@@ -13,29 +13,45 @@ Door de opkomst van cloud computing is applicatie-ontwikkeling drastisch geëvol
 
 Daarnaast heeft het ook gezorgd voor nieuwe technieken om te ontwikkelen, waaronder serverless computing. Ondanks de naam worden er wel nog servers gebruikt, maar wordt het beheer van de server ontkoppelt van de ontwikkelaar \autocite{Thatikonda2023}. Deze abstractie versnelt volgens \textcite{Ghorbian2025} het proces van ontwikkelen, doordat ontwikkelaars niet meer moeten nadenken over het beheer van de onderliggende infrastructuur. De cloud providers nemen dit op zich. Dit zorgt voor betere kostenefficiëntie en schaalbaarheid \autocite{Thatikonda2023}. Anderzijds wordt er in het artikel van \textcite{Chippagiri2025} gesuggereerd dat er problemen kunnen zijn met vendor lock-in, zwakke plekken in de beveiliging, cold starts (opstart na inactiviteit) en inefficiënte resource toekenningen bij dynamische workloads, waardoor de kosten onnodig kunnen oplopen. Deze laatste 2 nadelen zijn bijzonder relevant in dit onderzoek, aangezien beiden een directe impact hebben op prestaties en kosten. 
 
-Function-as-a-Service (FaaS), een cloud service model, is een belangrijk onderdeel van deze serverless architectuur en zorgt ervoor dat stukjes logica uitgevoerd kunnen worden als een reactie op gebeurtenissen, waaronder andere functies, databases, HTTP endpoints of een geplande actie \autocite{Yussupov2021}. Deze functies zijn stateless en short-lived, de onderliggende infrastructuur wordt beheerd door de cloud provider en de mogelijke events en third-party triggers zijn ook volledig afhankelijk van de cloud provider \autocite{Yussupov2021}. In dit onderzoek focussen we ons enkel op het FaaS-platform van Microsoft Azure.
+Function-as-a-Service (FaaS), een cloud service model, is een belangrijk onderdeel van deze serverless architectuur en zorgt ervoor dat stukjes logica uitgevoerd kunnen worden als een reactie op gebeurtenissen, waaronder andere functies, databases, HTTP endpoints of een geplande actie \autocite{Yussupov2021}. Deze functies zijn stateless en short-lived, de onderliggende infrastructuur wordt beheerd door de cloud provider en de mogelijke events en third-party triggers zijn ook volledig afhankelijk van de cloud provider \autocite{Yussupov2021}.
 
 \section{Azure Functions}
 
+In dit onderzoek situeert het probleemdomein zich in het FaaS-gedeelte van Azure, genaamd Azure Functions. We zoomen in dit  hoofdstuk in op de mogelijkheden en beperkingen van deze technologie om zo de problemen die Agromanager ondervindt beter te begrijpen.
+
 \subsection{Wat is het?}
+
+Azure Functions is een serverless oplossing, waarbij de ontwikkelaar volgens \textcite{Microsoft2025} applicaties kan maken met minder code, infrastructuur en kosten. Deze functies kunnen geprogrammeerd worden in verschillende programmeertalen, waardoor je zelf de keuze hebt welke het best aansluit bij je applicatie \autocite{Microsoft2025}. 
 
 \subsection{Use Cases}
 
 \subsection{Technologieën}
 
+\subsubsection{Azure WebJobs SDK}
+
+\subsubsection{Scale Controller}
+
+\subsubsection{Azure App Service}
+
 \subsection{Kostenmodellen}
 
-\subsection{Hostingmodellen}
+Omdat niet elke functie dezelfde noden heeft, zijn er verschillende hostingplannen beschikbaar waarop een Azure Function kan draaien. Deze hebben allemaal specifieke kenmerken op vlak van schaalbaarheid, kosten en prestaties.
 
-\subsection{Beveiliging}
+\subsubsection{Consumption Plan}
 
-\subsection{CI/CD}
+\subsubsection{Flex Consumption Plan}
 
-\subsection{Schaalbaarheid}
+\subsubsection{Premium Plan}
 
-\subsection{Prestaties}
+\subsubsection{Dedicated Plan}
+
+\subsubsection{Azure Container Apps}
+
+\subsection{Prestaties \& Schaalbaarheid}
 
 \subsection{Kostenefficiëntie}
+
+\subsection{CI/CD}
 
 \section{Azure Container Apps}
 
@@ -45,17 +61,25 @@ Function-as-a-Service (FaaS), een cloud service model, is een belangrijk onderde
 
 \subsection{Technologieën}
 
+\subsubsection{KEDA}
+
+\subsubsection{Envoy}
+
+\subsubsection{Dapr}
+
+\subsubsection{Azure Kubernetes Service}
+
 \subsection{Kostenmodellen}
 
-\subsection{Beveiliging}
+\subsubsection{Consumption Plan}
 
-\subsection{CI/CD}
+\subsubsection{Dedicated Plan}
 
-\subsection{Schaalbaarheid}
-
-\subsection{Prestaties}
+\subsection{Prestaties \& Schaalbaarheid}
 
 \subsection{Kostenefficiëntie}
+
+\subsection{CI/CD}
 
 \section{Google Cloud Run}
 
@@ -65,16 +89,22 @@ Function-as-a-Service (FaaS), een cloud service model, is een belangrijk onderde
 
 \subsection{Technologieën}
 
+\subsubsection{Knative}
+
+\subsubsection{gVisor}
+
+\subsubsection{Google Kubernetes Engine}
+
 \subsection{Kostenmodellen}
 
-\subsection{Beveiliging}
+\subsubsection{Request-based}
 
-\subsection{CI/CD}
+\subsubsection{Instance-based}
 
-\subsection{Schaalbaarheid}
-
-\subsection{Prestaties}
+\subsection{Prestaties \& Schaalbaarheid}
 
 \subsection{Kostenefficiëntie}
+
+\subsection{CI/CD}
 
 \section{Vergelijkende Analyse: ACA vs GCR}
