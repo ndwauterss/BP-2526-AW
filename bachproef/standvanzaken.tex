@@ -11,19 +11,36 @@
 
 Door de opkomst van cloud computing is applicatie-ontwikkeling drastisch geëvolueerd. Dit paradigma levert geheugen, computerkracht en andere applicaties aan via het internet die op aanvraag kan op- of afschalen \autocite{Pubglob2024}. Hierdoor zijn bedrijven niet meer genoodzaakt om nieuwe software op fysieke servers of apparaten te installeren, waardoor er minder kosten zijn voor hardware en er geen kostbare tijd moet gaan naar configuraties en onderhoud \autocite{SegunFalade2024}. Ook het opschalen van hun capaciteit, wat meestal voor de aankoop van nieuwe servers en complexe integraties zorgde, is gemakkelijker en goedkoper geworden \autocite{SegunFalade2024}.
 
-Daarnaast heeft het ook gezorgd voor nieuwe technieken om te ontwikkelen, waaronder serverless computing. Ondanks de naam worden er wel nog servers gebruikt, maar wordt het beheer van de server ontkoppelt van de ontwikkelaar \autocite{Thatikonda2023}. Deze abstractie versnelt volgens \textcite{Ghorbian2025} het proces van ontwikkelen, doordat ontwikkelaars niet meer moeten nadenken over het beheer van de onderliggende infrastructuur. De cloud providers nemen dit op zich. Dit zorgt voor betere kostenefficiëntie en schaalbaarheid \autocite{Thatikonda2023}. Anderzijds wordt er in het artikel van \textcite{Chippagiri2025} gesuggereerd dat er problemen kunnen zijn met vendor lock-in, zwakke plekken in de beveiliging, cold starts (opstart na inactiviteit) en inefficiënte resource toekenningen bij dynamische workloads, waardoor de kosten onnodig kunnen oplopen. Deze laatste 2 nadelen zijn bijzonder relevant in dit onderzoek, aangezien beiden een directe impact hebben op prestaties en kosten. 
+Daarnaast heeft het ook gezorgd voor nieuwe technieken om te ontwikkelen, waaronder serverless computing. Ondanks de naam worden er wel nog servers gebruikt, maar wordt het beheer van de server ontkoppelt van de ontwikkelaar \autocite{Thatikonda2023}. Deze abstractie versnelt volgens \textcite{Ghorbian2025} het proces van ontwikkelen, doordat ontwikkelaars niet meer moeten nadenken over het beheer van de onderliggende infrastructuur. Dit zorgt voor een betere kostenefficiëntie en schaalbaarheid \autocite{Thatikonda2023}. Anderzijds wordt er in het artikel van \textcite{Chippagiri2025} gesuggereerd dat er problemen kunnen zijn met vendor lock-in, zwakke plekken in de beveiliging, cold starts (opstart na inactiviteit) en inefficiënte resource toekenningen bij dynamische workloads, waardoor de kosten onnodig kunnen oplopen. Deze laatste 2 nadelen zijn bijzonder relevant in dit onderzoek, aangezien beiden een directe impact hebben op prestaties en kosten. 
+
+Schaalbaarheid is een belangrijk thema in de serverless context en gebeurt in tegenstelling tot traditionele systemen automatisch op basis van belasting \autocite{Dutta2024}. Volgens \textcite{VishalHazarika2024} vermindert het prestatieproblemen bij een piekbelasting, waardoor de gebruikerservaring verbetert. \textcite{Dutta2024} geeft aan dat traditionele architecturen vaak te veel of te weinig resources toekennen wat in bottlenecks of verspilling resulteert. De uitdagingen van deze automatische schaalbaarheid zijn cold starts, fluctuaties en gelimiteerde hoeveelheden van instanties en zorgen voor een negatieve impact op de prestaties van een toepassing \autocite{Tari2024}.
+
+Geheugentoekenning speelt hierbij een belangrijke rol volgens \textcite{Shojaeerad2024}, omdat meer geheugen kan resulteren in een snellere uitvoeringstijd. Hierbij is het wel belangrijk om een balans te vinden tussen de kost versus prestaties en benadrukt dit het belang van een juiste configuratie in een serverless context \autocite{Shojaeerad2024}. Ook cold starts hebben een negatieve invloed op de prestaties en in het artikel van \textcite{Vudayagiri2024} wordt beweerd dat dit kan zorgen voor een driemaal langere uitvoeringstijd ten opzichte van warm starts.
 
 Function-as-a-Service (FaaS), een cloud service model, is een belangrijk onderdeel van deze serverless architectuur en zorgt ervoor dat stukjes logica uitgevoerd kunnen worden als een reactie op gebeurtenissen, waaronder andere functies, databases, HTTP endpoints of een geplande actie \autocite{Yussupov2021}. Deze functies zijn stateless en short-lived, de onderliggende infrastructuur wordt beheerd door de cloud provider en de mogelijke events en third-party triggers zijn ook volledig afhankelijk van de cloud provider \autocite{Yussupov2021}.
 
 \section{Azure Functions}
 
-In dit onderzoek situeert het probleemdomein zich in het FaaS-gedeelte van Azure, genaamd Azure Functions. We zoomen in dit  hoofdstuk in op de mogelijkheden en beperkingen van deze technologie om zo de problemen die Agromanager ondervindt beter te begrijpen.
+In dit onderzoek situeert het probleemdomein zich in het FaaS-gedeelte van Azure, genaamd Azure Functions. We zoomen in dit hoofdstuk in op de mogelijkheden en beperkingen van deze technologie om zo de problemen die Agromanager ondervindt beter te begrijpen.
 
 \subsection{Wat is het?}
 
-Azure Functions is een serverless oplossing, waarbij de ontwikkelaar volgens \textcite{Microsoft2025} applicaties kan maken met minder code, infrastructuur en kosten. Deze functies kunnen geprogrammeerd worden in verschillende programmeertalen, waardoor je zelf de keuze hebt welke het best aansluit bij je applicatie \autocite{Microsoft2025}. 
+Azure Functions is een serverless oplossing, waarbij de ontwikkelaar volgens Microsoft \footnote{\label{af:what-is-it}\url{https://learn.microsoft.com/en-us/azure/azure-functions/functions-overview}} applicaties kan maken met minder code, infrastructuur en kosten. Deze functies kunnen geprogrammeerd worden in verschillende programmeertalen, waardoor je zelf de keuze hebt welke het best aansluit bij je applicatie\footref{af:what-is-it}. 
 
 \subsection{Use Cases}
+
+Deze technologie is volgens Microsoft\footnote{\label{af:scenarios}\url{https://learn.microsoft.com/en-us/azure/azure-functions/functions-scenarios}} ideaal voor de volgende scenario's:
+
+\begin{description}
+    \item[Uploaden van bestanden] todo
+    \item[Verwerken van real-time streams en events] todo 
+    \item[Machine Learning en AI] todo
+    \item[Uitvoeren geplande taken] todo 
+    \item[Web API] todo
+    \item[Serverless workflow] todo
+    \item[Reageren op database aanpassingen] todo
+    \item[Betrouwbaar berichtensysteem] todo 
+\end{description}
 
 \subsection{Technologieën}
 
@@ -33,9 +50,13 @@ Azure Functions is een serverless oplossing, waarbij de ontwikkelaar volgens \te
 
 \subsubsection{Azure App Service}
 
-\subsection{Kostenmodellen}
+\subsection{Hostingplannen}
 
 Omdat niet elke functie dezelfde noden heeft, zijn er verschillende hostingplannen beschikbaar waarop een Azure Function kan draaien. Deze hebben allemaal specifieke kenmerken op vlak van schaalbaarheid, kosten en prestaties.
+
+\subsubsection{Dedicated Plan}
+
+Het Dedicated Plan binnen Azure Functions is gebaseerd op het App Service Plan-model en houdt in dat meerdere functies kunnen draaien op dezelfde virtuele machines, waarbij men zelf de grootte en aantal instanties kan bepalen \footnote{\label{af:dedicated-plan}\url{https://learn.microsoft.com/en-us/azure/azure-functions/dedicated-plan}}. Net als bij traditionele web apps delen meerdere functies binnen hetzelfde App Service Plan deze resources\footref{af:dedicated-plan}. Deze vaste bronnen zorgen voor voorspelbare prestaties, maar komen ook met een vaste prijs\footnote{\label{af:comparison-hosting-options}\url{https://learn.microsoft.com/en-us/azure/azure-functions/functions-scale\#comparison-of-hosting-options}}. Door de vaste kost is het minder ideaal voor workloads met seizoensgebonden karakter. 
 
 \subsubsection{Consumption Plan}
 
@@ -43,13 +64,42 @@ Omdat niet elke functie dezelfde noden heeft, zijn er verschillende hostingplann
 
 \subsubsection{Premium Plan}
 
-\subsubsection{Dedicated Plan}
+Net als bij het Dedicated Plan worden functies binnen het Premium Plan gehost op virtuele machines via het App Service Plan\footnote{\label{af:premium-plan}\url{https://learn.microsoft.com/en-us/azure/azure-functions/functions-premium-plan}}. Echter maakt het Premium Plan gebruik van Always Ready-instanties die cold starts vermijden en helpen bij het automatisch schalen\footref{af:comparison-hosting-options}. Volgens Microsoft is dit Plan ideaal voor functies die snelle antwoorden en hogere prestaties nodig hebben en (bijna) continu draaien\footref{af:comparison-hosting-options}. Deze laatste bewering doet vermoeden dat dit mogelijks geen optimale oplossing is voor het probleem van Agromanager. Dit wordt bekrachtigd door de vaste kost die veroorzaakt wordt door de Always Ready-instanties, aangezien er minstens één instantie altijd draait en kosten genereert\footref{af:premium-plan}. 
 
 \subsubsection{Azure Container Apps}
 
+Sinds mei 2023 is het mogelijk om Azure Function apps te hosten op Azure Container Apps (ACA) en sinds 2024 werd deze optie algemeen beschikbaar \autocite{Techcommunity2024a}. Deze hosting maakt een combinatie mogelijk tussen serverless functies die draaien binnen containergebaseerde toepassingen, waarbij er een brede ondersteuning is voor verschillende programmeertalen via specifieke basisimages\footnote{\label{af:container-apps}\url{https://learn.microsoft.com/en-us/azure/azure-functions/functions-container-apps-hosting}}. In tegenstelling tot de andere hostingplannen vereist deze manier het gebruik van containers en een aangepaste CI/CD-aanpak, waarbij containerimages centraal staan \autocite{George2022c}. Dit kan een impact hebben op het ontwikkelingsproces en onderhoud van de toepassingen bij een migratie.
+
 \subsection{Prestaties \& Schaalbaarheid}
 
+Schalen binnen het Dedicated Plan van Azure Functions kan volgens Microsoft\footref{af:dedicated-plan} gebeuren op 4 manieren: 
+
+\begin{enumerate}
+    \item Manueel toevoegen van Virtuele Machine instanties
+    \item Het aanzetten van de instelling voor automatisch schalen
+    \item Het opzetten van autoscale-regels via Azure Autoscale
+    \item Overstappen naar een ander App Service Plan met standaard meer instanties en geheugen
+\end{enumerate}
+
+Wanneer gekozen wordt voor het manueel schalen, kan het gebeuren dat de toegewezen hoeveelheid resources inefficiënt zijn wat kan leiden tot hogere kosten en verspilling van middelen of prestatieproblemen \autocite{VishalHazarika2024}. In de thesis van \textcite{Falck2024} wordt beweerd dat het automatisch schalen in het Dedicated Plan zorgt voor langere opstarttijden van de Virtuele Machines, zeker in de situatie van grote instanties. Ook wordt het aangeraden om autoscale-regels in te stellen op basis van wiskundige formules om een ideale trigger te vinden \autocite{Falck2024}. Het opschalen door een ander App Service Plan te kiezen, kan volgens Microsoft\footnote{\label{af:dedicated-plan-scale-up}\url{https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up}} op 2 manieren: 
+
+\begin{enumerate}
+    \item Verticaal: meer CPU/memory
+    \item Horizontaal: meer instanties
+\end{enumerate}
+
+Deze aanpassing komt wel met een bepaalde kost\footref{af:dedicated-plan-scale-up}. In de technische documentatie van Microsoft\footref{af:dedicated-plan} staat dat de instelling ``Always On'' best aangezet wordt, omdat de applicatie anders inactief wordt en dit zorgt voor een langere uitvoeringstijd bij een eerste aanroep. Een cold start-problematiek kan hierdoor vermeden worden. Het App Service Plan heeft als grootste kenmerk dat het vaste resources verdeelt over de verschillende applicaties binnen dit plan en is op deze manier een ideale oplossing voor apps met een consistente workload\footnote{\label{af:overview-hosting-options}\url{https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans}}. Volgens \textcite{VishalHazarika2024} kan het net voor prestatieproblemen zorgen wanneer de workload dynamisch is.
+
+Het Premium Plan biedt automatische en handmatige schaalbaarheid aan, waarbij de hoeveelheid instanties dynamisch kunnen meegroeien met de belasting \autocite{Mishra2025}. Microsoft\footnote{\label{af:premium-plan-portal}\url{https://learn.microsoft.com/en-us/azure/azure-functions/functions-premium-plan?tabs=portal}} suggereert dat prestaties voorspelbaar zijn dankzij Virtuele Machines en Always Ready-instanties. Dit hostingplan ondersteunt zowel horizontale (meer instanties) als verticale (krachtigere VM’s) schaalbaarheid \autocite{Mishra2025}. In het boek \textcite{Mishra2025} staat ook dat integratie met andere Azure-diensten en netwerken mogelijk is voor complexe scenario’s. Hierdoor is het Premium Plan bijzonder geschikt voor workloads met hoge of onvoorspelbare pieken.
+
+Dit hostingplan heeft volgens \textcite{Mishra2025} geen last van cold starts. Dit wordt mogelijk gemaakt door de Always Ready instanties die gebruikt worden wanneer er een aanvraag binnenkomt \autocite{Sawhney2023}. In de situatie waarbij alle instanties in gebruik zijn, worden de pre-warmed instanties aangesproken om bij te springen en zorgt het zo voor een buffer \autocite{Sawhney2023}. Kort geconcludeerd is er in het Premium plan geen scale-to-zero aanwezig. Deze eliminatie van cold starts heeft een positieve invloed op de prestaties \autocite{Mishra2025} en heeft volgens \textcite{Chippagiri2025} hierdoor een betere prestatie ten opzichte van sommige andere FaaS-toepassingen.
+Door de mogelijkheid om de aantallen van de Always Ready en pre-warmed instanties afzonderlijk in te stellen naar de noden van de applicatie, zorgt dit voor voorspelde prestaties tijdens piekbelasting\footref{af:premium-plan-portal}.
+
 \subsection{Kostenefficiëntie}
+
+De kosten voor Azure Functions binnen het Dedicated Plan zijn niet pay-per-execution en zijn afhankelijk van welk App Service Plan gekozen wordt, waarbij elk plan een bepaalde hoeveelheid geheugen, opslag en prijs per instantie bevat\footnote{\label{af:pricing-windows}\url{https://azure.microsoft.com/nl-nl/pricing/details/app-service/windows/}}. Deze prijzen verschillen per gekozen besturingssysteem en lijken duurder te zijn voor Windows ten opzichte van Linux\footnote{\label{af:pricing-linux}\url{https://azure.microsoft.com/nl-nl/pricing/details/app-service/linux/}}. Door de vaste kost lijkt het minder interessant te zijn voor dynamische workloads met lange inactiviteitsperioden.
+
+Pre-warmed en Always Ready instanties zorgen voor een verschil in facturatie ten opzichte van hostings die tot nul schalen, aangezien er nu niet meer per uitvoering en verbruikt geheugen gefactureerd wordt, maar de kost berekend wordt op aantal seconden dat de CPU gebruikt wordt en verbruikt geheugen \autocite{Kettner2022}. Dit kan een positief effect hebben op de prijs, indien het gaat over een functie die heel vaak gebruikt wordt \autocite{Kettner2022}. Dit lijkt minder kostenefficiënt te zijn voor dynamische workloads met lange inactiviteitsperioden door de vaste kost die hier bij hoort.
 
 \subsection{CI/CD}
 
@@ -69,7 +119,7 @@ Omdat niet elke functie dezelfde noden heeft, zijn er verschillende hostingplann
 
 \subsubsection{Azure Kubernetes Service}
 
-\subsection{Kostenmodellen}
+\subsection{Hostinglannen}
 
 \subsubsection{Consumption Plan}
 
@@ -95,7 +145,7 @@ Omdat niet elke functie dezelfde noden heeft, zijn er verschillende hostingplann
 
 \subsubsection{Google Kubernetes Engine}
 
-\subsection{Kostenmodellen}
+\subsection{Hostingplannen}
 
 \subsubsection{Request-based}
 
