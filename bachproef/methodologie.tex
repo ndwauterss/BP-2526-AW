@@ -26,5 +26,39 @@
 %% Maak voor elke fase (behalve het literatuuronderzoek) een NIEUW HOOFDSTUK aan
 %% en geef het een gepaste titel.
 
-\lipsum[21-25]
+Deze studie werd op een iteratieve manier uitgevoerd. Er werd op regelmatige basis feedback gevraagd en verwerkt van de belanghebbenden en promotor. Tijdens het uitvoeren van dit onderzoek ging er ook tijd naar het schrijven van een onderzoeksvoorstel en bachelorproef. Bij de planning werd uitgegaan van 8 uur werk per week zonder rekening te houden met eventuele vakanties, weekends en feestdagen.
+
+\section{Fase 1: Requirements-analyse}
+
+Het onderzoek startte met een requirements-analyse. De functie in het probleemdomein werd onderworpen aan een eerste analyse, waaruit een requirements-lijst ontstond. Samen met de co-promotor werd deze lijst besproken en verder gefinaliseerd om de verwachtingen en richting van het onderzoek te bepalen. Op het einde van deze fase was er een lijst van eisen die kon dienen als basis om de literatuurstudie op te starten. Daarnaast werd er ook een antwoord gevonden op de volgende deelvragen: 
+
+\begin{enumerate}
+    \item Wat zijn de beperkingen van de huidige toepassing?
+    \item Wat maakt de bestaande applicatie dynamisch en seizoensgebonden? 
+    \item Welke architecturale en technische factoren zijn belangrijk bij de huidige toepassing? 
+    \item Aan welke eisen moet een nieuwe oplossing voldoen om als succesvol aanzien te worden?
+\end{enumerate}
+
+De tijdsduur die nodig was in deze fase was 32 uur verspreid over 4 weken.
+
+\section{Fase 2: Literatuurstudie}
+
+In de volgende stap werd er op basis van de requirements-lijst uit de vorige fase een longlist opgesteld die alle potentiële alternatieven in kaart bracht. Deze lijst werd wederom besproken met de co-promotor. Uit dit gesprek kwam de beslissing om voornamelijk te focussen op containergebaseerde oplossingen wat resulteerde in een shortlist van Azure Container Apps en Google Cloud Run. Uiteindelijk werd er een uitgebreide literatuurstudie uitgevoerd op het probleemdomein en deze technologieën uit de shortlist. Deze studie gaf bepaalde inzichten die later konden gebruikt worden bij de vergelijking van deze technologieën. Er kwam een antwoord op de volgende deelvragen: 
+
+\begin{enumerate}
+    \item Wat zijn de belangrijkste technische verschillen tussen de mogelijke oplossingen?
+    \item Wat zijn de architecturale overwegingen en uitdagingen bij een migratie naar een andere oplossing?
+\end{enumerate}
+
+Deze fase heeft 80 uur in beslag genomen over een periode van 20 weken. 
+
+%\section{Fase 3: Proof-of-Concept}
+
+%Op dit moment kan de Proof-of-Concept (PoC) opgestart worden door het opzetten van de testomgevingen in de verschillende cloud omgevingen. Hierbij wordt een dynamische Function app gemigreerd naar de verschillende alternatieven. Bij deze migraties worden alle stappen en configuraties gedocumenteerd en zal er een antwoord komen op de deelvraag: (6) Wat zijn de architecturale overwegingen en uitdagingen bij een migratie naar een andere oplossing? Vervolgens worden relevante testscenario's uitgewerkt en uitgevoerd. De testen worden geautomatiseerd door middel van code in Python, waarbij variabelen gedefinieerd worden op één plaats. Er zal gekeken worden naar de prestaties en schaalbaarheid van elke toepassing. Dit houdt de volgende criteria in: cold start tijd, gemiddelde afhandelingstijd, throughput (aanvraag/seconde), CPU-gebruik, geheugengebruik en initialisatietijd van een nieuwe instantie.
+
+%Deze informatie wordt verkregen via Prometheus en Graphana en bijgehouden om een verdere analyse op uit te voeren. Elke benchmark wordt minstens 30 keer uitgevoerd per testomgeving, zodat er een normaal verdeling is van de gemiddelden (centrale limietstelling). Om de kosten te berekenen, zullen de prijzencalculators gebruikt worden van de verschillende cloud providers. Als resultaat zijn de nodige gegevens beschikbaar waarop het advies gebaseerd kan worden, alsook alle scripts die het automatiseren van de benchmarks mogelijk maken. De tijd die hiervoor nodig zal zijn, is 80 uur verspreid over 10 weken.
+
+%\section{Fase 4: Verwerking resultaten}
+
+%Tot slot wordt er een analyse op de resultaten uitgevoerd. Dit gebeurt door het berekenen van de gemiddeldes, medianen, standaarddeviaties, minimale/maximale waarden en spreiding van resultaten. Deze nieuwe data wordt vervolgens gebruikt om statistische testen op uit te voeren. Hierbij zal gekeken worden naar een afhankelijke variabele (resultaten) en een onafhankelijke variabele (cloud provider). Deze bevindingen worden gevisualiseerd via Python en zal een antwoord bieden op de deelvragen: (7) Welke impact heeft een migratie naar de mogelijke oplossingen? (8) Wat is de superieure oplossing? Aan de hand van deze analyse en andere criteria zoals aanpassingen aan het deploymentproces en security, wordt er een advies opgesteld. Hierop kunnen de belanghebbenden zich baseren om een beslissing te nemen. Deze conclusie zal ongeveer 32 uur in beslag nemen verspreid over 4 weken. 
 
