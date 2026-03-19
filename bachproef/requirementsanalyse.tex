@@ -3,6 +3,57 @@
 
 Dit hoofdstuk brengt de functionele en niet-functionele eisen van de huidige Azure Function in kaart om een diepgaand inzicht te krijgen in het probleemdomein. In combinatie met de literatuurstudie zal deze analyse het technisch kader vormen voor de configuraties van de container-omgevingen. Dit waarborgt een objectieve vergelijking van Azure Container Apps en Google Cloud Run en ondersteunt op deze manier de proof-of-concept in het volgende hoofdstuk.
 
+\section{Context: Agromanager}
+
+Agromanager is een web applicatie die speciaal ontworpen is om de bedrijfsprocessen van een teler te vereenvoudigen. Zo is het voor hen mogelijk om leveringen die binnenkomen of buitengaan te registreren, oogsten te registreren, teelten te beheren, spuitschrift bij te houden en zoveel meer. Om de applicatie overzichtelijk te houden, werd er een onderverdeling voorzien in modules.
+
+\begin{figure*}
+    \centering
+    \includegraphics[width=\textwidth]{../graphics/modules_agromanager.png}
+    \caption[Modules in Agromanager]{Screenshot van hoe de modules weergegeven worden in Agromanager}
+\end{figure*} 
+
+Het probleemdomein bevindt zich in de module GPS. Deze module bevat alle functionaliteiten die te maken hebben met het in kaart brengen van bepaalde aspecten van teelten. Onder deze functionaliteiten vallen de volgende items:
+
+\begin{itemize}
+    \item teelten beheren
+    \item waarnemingen van bepaalde plagen registreren
+    \item teeltrijen intekenen
+    \item hindernissen markeren
+    \item Boomdata toevoegen
+    \item overzicht van al het voorgaande op een kaart tonen
+    \item taakkaarten genereren
+    \item machines beheren
+\end{itemize}
+
+ Deze gegevens kunnen gebruikt worden om bepaalde datasets op te bouwen die op hun beurt nodig zijn om taakkaarten te genereren. Deze kaarten zijn nuttig bij het rijden met de tractor door de boomgaard. Aan de hand van deze gegevens kan de machine automatisch beslissen waar er meer product moet gespoten worden, waar men moet opletten bij het wortelsnijden bij obstakels en waar er dieper of minder diep gesneden mag worden.
+ 
+ Teelten zijn het centrale onderdeel in dit verhaal. Alles wat ingetekend, gemarkeerd of geregistreerd wordt, gebeurt op een kaart van een bepaalde teelt. Dit verklaart waarom het noodzakelijk is dat de teler zijn of haar teelten toevoegt, up-to-date houdt en hier goed overzicht over heeft.
+ 
+ \begin{figure}[H]
+     \centering
+     \includegraphics[width=\textwidth]{../graphics/teelten_beheer.png}
+     \caption[Overzicht teelten]{Screenshot van hoe het overzicht van de teelten eruit ziet. Hier gebeurt het beheer.}
+ \end{figure}
+ 
+ De functie die geanalyseerd gaat worden, heeft als doel om een data set te genereren. Voor deze gegenereerd kan worden, moeten er eerst bepaalde zaken ingesteld worden. Zo heeft een dataset een datum, een naam, een kleurschaal, een bron waarvan het de gegevens haalt en bepaalde datalagen.
+ 
+ \begin{figure}[H]
+     \centering
+     \includegraphics[width=\textwidth]{../graphics/dataset_aanmaken.png}
+     \caption[Aanmaak dataset]{Screenshot van aanmaakscherm voor een dataset.}
+ \end{figure}
+ 
+ Nadat dit ingesteld is, kunnen de brongegevens toegevoegd worden. Dit kan aangeleverd worden door een derde partij of is aangemaakt door de teler zelf. Deze gegevens zullen uiteindelijk ervoor zorgen dat zaken gelinkt worden aan bepaalde punten op de teelt. Tot slot kan men klikken op de knop genereer dataset wat de functie triggert die onderzocht gaat worden. In het scherm wordt er achterliggend om de 5 seconden gecontroleerd of de generatie voltooid is en wordt het bestand gedownload wanneer het klaar is.
+ 
+\begin{figure}[H]
+     \centering
+     \includegraphics[width=\textwidth]{../graphics/details_dataset.png}
+     \caption[Details dataset]{Screenshot van details scherm van een dataset, waar de functie getriggerd kan worden.}
+\end{figure}
+
+\section{Functionele Werking}
+
 \section{Functionele Eisen}
 
 \section{Niet-Functionele Eisen}
