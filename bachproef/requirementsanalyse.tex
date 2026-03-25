@@ -5,15 +5,7 @@ Dit hoofdstuk brengt de functionele en niet-functionele eisen van de huidige Azu
 
 \section{Context: Agromanager}
 
-Agromanager is een web applicatie die speciaal ontworpen is om de bedrijfsprocessen van een teler te vereenvoudigen. Zo is het voor hen mogelijk om leveringen die binnenkomen of buitengaan te registreren, oogsten te registreren, teelten te beheren, spuitschrift bij te houden en zoveel meer. Om de applicatie overzichtelijk te houden, werd er een onderverdeling voorzien in modules.
-
-\begin{figure*}
-    \centering
-    \includegraphics[width=\textwidth]{../graphics/modules_agromanager.png}
-    \caption[Modules in Agromanager]{Screenshot van hoe de modules weergegeven worden in Agromanager}
-\end{figure*} 
-
-Het probleemdomein bevindt zich in de module GPS. Deze module bevat alle functionaliteiten die te maken hebben met het in kaart brengen van bepaalde aspecten van teelten. Onder deze functionaliteiten vallen de volgende items:
+Agromanager is een web applicatie die ontworpen is om de bedrijfsprocessen van een teler te vereenvoudigen. Zo is het voor hen mogelijk om inkomende of uitgaande leveringen te registreren, oogsten te registreren, teelten te beheren, spuitschrift bij te houden en zoveel meer. Om het overzicht te bewaren, werd de applicatie onderverdeelt in modules. Het probleemdomein bevindt zich in de module GPS en bevat alle functionaliteiten die te maken hebben met het in kaart brengen van bepaalde aspecten van een teelt. Onder deze functionaliteiten vallen de volgende items:
 
 \begin{itemize}
     \item teelten beheren
@@ -26,33 +18,64 @@ Het probleemdomein bevindt zich in de module GPS. Deze module bevat alle functio
     \item machines beheren
 \end{itemize}
 
- Deze gegevens kunnen gebruikt worden om bepaalde datasets op te bouwen die op hun beurt nodig zijn om taakkaarten te genereren. Deze kaarten zijn nuttig bij het rijden met de tractor door de boomgaard. Aan de hand van deze gegevens kan de machine automatisch beslissen waar er meer product moet gespoten worden, waar men moet opletten bij het wortelsnijden bij obstakels en waar er dieper of minder diep gesneden mag worden.
- 
- Teelten zijn het centrale onderdeel in dit verhaal. Alles wat ingetekend, gemarkeerd of geregistreerd wordt, gebeurt op een kaart van een bepaalde teelt. Dit verklaart waarom het noodzakelijk is dat de teler zijn of haar teelten toevoegt, up-to-date houdt en hier goed overzicht over heeft.
- 
- \begin{figure}[H]
-     \centering
-     \includegraphics[width=\textwidth]{../graphics/teelten_beheer.png}
-     \caption[Overzicht teelten]{Screenshot van hoe het overzicht van de teelten eruit ziet. Hier gebeurt het beheer.}
- \end{figure}
- 
- De functie die geanalyseerd gaat worden, heeft als doel om een data set te genereren. Voor deze gegenereerd kan worden, moeten er eerst bepaalde zaken ingesteld worden. Zo heeft een dataset een datum, een naam, een kleurschaal, een bron waarvan het de gegevens haalt en bepaalde datalagen.
- 
- \begin{figure}[H]
-     \centering
-     \includegraphics[width=\textwidth]{../graphics/dataset_aanmaken.png}
-     \caption[Aanmaak dataset]{Screenshot van aanmaakscherm voor een dataset.}
- \end{figure}
- 
- Nadat dit ingesteld is, kunnen de brongegevens toegevoegd worden. Dit kan aangeleverd worden door een derde partij of is aangemaakt door de teler zelf. Deze gegevens zullen uiteindelijk ervoor zorgen dat zaken gelinkt worden aan bepaalde punten op de teelt. Tot slot kan men klikken op de knop genereer dataset wat de functie triggert die onderzocht gaat worden. In het scherm wordt er achterliggend om de 5 seconden gecontroleerd of de generatie voltooid is en wordt het bestand gedownload wanneer het klaar is.
+Deze gegevens kunnen gebruikt worden om datasets op te bouwen die nodig zijn om taakkaarten te genereren. Deze kaarten zijn nuttig bij het rijden met de tractor door de boomgaard. Aan de hand van deze gegevens kan de machine automatisch beslissen waar er meer of minder product moet gespoten worden, waar men moet opletten bij het wortelsnijden bij obstakels en waar er dieper of minder diep gesneden mag worden om de groei van de boom te bevorderen.
+\newline
+\newline
+Teelten zijn het centrale onderdeel in dit verhaal. Alles wat ingetekend, gemarkeerd of geregistreerd wordt, gebeurt op een kaart van een bepaalde teelt. Dit verklaart de noodzaak van een goed beheer van teelten door de teler.
  
 \begin{figure}[H]
-     \centering
-     \includegraphics[width=\textwidth]{../graphics/details_dataset.png}
-     \caption[Details dataset]{Screenshot van details scherm van een dataset, waar de functie getriggerd kan worden.}
+    \centering
+    \includegraphics[width=\textwidth]{../graphics/teelten_beheer.png}
+    \caption[Overzicht teelten]{Het overzichtsscherm van teelten in Agromanager. Hier gebeurt het beheer.}
+\end{figure}
+ 
+De functie die geanalyseerd zal worden, heeft als doel om een dataset te genereren. Voor dit gegenereerd kan worden, moeten er eerst zaken ingesteld worden. Zo heeft een dataset een datum, een naam, een kleurschaal, een bron waarvan het de gegevens haalt en specifieke datalagen. Achterliggend maakt dit een rij aan in de database die later gebruikt zal worden bij de generatie.
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../graphics/dataset_aanmaken.png}
+    \caption[Aanmaak dataset]{Het aanmaakscherm voor een dataset in Agromanager.}
+\end{figure}
+ 
+Vervolgens kunnen de brongegevens toegevoegd worden. Dit kan aangeleverd worden door een derde partij of is aangemaakt door de teler zelf. Deze gegevens zullen uiteindelijk ervoor zorgen dat zaken gelinkt worden aan bepaalde punten op de teelt. Tot slot kan men klikken op de knop \textit{Genereer dataset} wat de functie triggert die centraal staat in dit onderzoek. In het scherm wordt er achterliggend om de 5 seconden gecontroleerd of het genereren voltooid is en wordt het bestand gedownload wanneer het klaar is.
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../graphics/details_dataset.png}
+    \caption[Details dataset]{Het detailscherm van een dataset in Agromanager waar de functie getriggerd kan worden.}
 \end{figure}
 
 \section{Functionele Werking}
+
+Het uiteindelijke doel van de functie is om meetdata te linken aan bomen op een teelt op basis van GPS-locaties. Dit proces is tweeledig en bestaat uit 2 triggers: een HTTP-trigger en een Queue-trigger. Wanneer de gebruiker op de knop \textit{Genereer dataset} klikt, wordt de HTTP-trigger geactiveerd. Deze functie krijgt een object binnen die alle noodzakelijke gegevens bevat om de opbouw op te starten. Dit object wordt omgevormd om in de volgende stap door te sturen naar de Queue-trigger. Tot slot geeft de functie een resultaat terug naar de aanroeper.
+\newline
+\newline
+De tweede functie in dit proces, de Queue-trigger, bevat de effectieve logica die de dataset genereert. Dit ontvangt het object die verzonden werd door de HTTP-trigger. Dit object wordt gebruikt om te bepalen uit welke bron de gegevens komen. Deze bron kan bestaan uit de volgende types:
+
+\begin{itemize}
+    \item CSV
+    \item Shapefile
+    \item Manueel
+    \item Waarnemingen
+    \item NMEA
+\end{itemize}
+
+Elk type vereist een andere logica om de dataset te genereren. Dit komt voornamelijk doordat de bestandstypes van de bron gegevens verschillen en op een andere manier opgehaald en verwerkt moeten worden. Dit wordt verder duidelijk in de beschrijving van de logica.
+
+\begin{enumerate}
+    \item \textbf{Initialisatie} \\
+    Het systeem haalt alle relevante gegevens uit de database op. Dit omvat de specifieke teeltinformatie, de bronbestanden en de gedefinieerde datalagen die aan de dataset gekoppeld zijn. Het systeem zet ook de status van de dataset op \textit{Genereren} en reset de grenswaarden voor verdere berekeningen en kleurbepalingen. Vervolgens wordt er per teelt de master file opgehaald. Dit is de blauwdruk van de teelt en bevat alle GPS-locaties.
+    \item \textbf{Inname Brongegevens} \\
+    Dit is het enige punt dat per type echt verschilt. Per teelt worden alle bronbestanden overlopen en opgehaald op een manier dat het type ondersteund. Voor CSV/NMEA/Manueel wordt de tekststroom geopend en regel per regel gelezen. Bij Shapefile wordt een geografisch kaartbestand geopend en ``geprojecteerd''. Bij Waarnemingen wordt de database geraadpleegd. 
+    \item \textbf{Koppeling} \\
+    Deze fase is de kern van het proces. Per datapunt zoekt het systeem de juiste boom op de plattegrond. Komt de ID van de boom voor in de data, dan is er een directe match. In dit geval wordt de waarde meteen op die boom geplakt. Is er enkel een GPS-locatie? Dan trekt het systeem een cirkel rondom dat punt en kijkt het welke boom daarbinnen valt. Bij NMEA combineert het systeem eerst de locatie met de snelheid, alvorens het gaat matchen. Bij waarnemingen krijgt elke boom binnen de radius de waarde van de melding.
+    \item \textbf{Validatie en Normalisatie} \\
+    Nu de data op de kaart ligt, moet dit verfijnd worden. Zo worden bomen die niet tot de geselecteerde variëteit behoren uit de dataset verwijderd. Ook wordt er voor elke boom de definitieve waarde berekend voor de datalaag. Het systeem onthoudt hierbij wat de hoogste en de laagste waarde was en gebruikt dit voor de legenda.
+    \item \textbf{Output} \\
+    Het eindresultaat wordt omgezet naar een definitief bestand en geüpload naar de Cloud. De link naar dit bestand wordt in de database bijgehouden bij de teelt om dit later terug te kunnen ophalen.
+    \item \textbf{Afronding} \\
+    Tot slot wordt de status van de dataset op \textit{Voltooid} gezet en worden alle wijzigingen weggeschreven naar de database.
+\end{enumerate}
 
 \section{Functionele Eisen}
 
