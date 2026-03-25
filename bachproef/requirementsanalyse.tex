@@ -47,6 +47,13 @@ Vervolgens kunnen de brongegevens toegevoegd worden. Dit kan aangeleverd worden 
 
 \section{Functionele Werking}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../graphics/functionele-werking.png}
+    \caption[Flowchart functionele werking]{Flowchart van de functionele werking: van HTTP-verzoek tot voltooide dataset.}
+    \label{fig:flowchart_werking}
+\end{figure}
+
 Het uiteindelijke doel van de functie is om meetdata te linken aan bomen op een teelt op basis van GPS-locaties. Dit proces is tweeledig en bestaat uit 2 triggers: een HTTP-trigger en een Queue-trigger. Wanneer de gebruiker op de knop \textit{Genereer dataset} klikt, wordt de HTTP-trigger geactiveerd. Deze functie krijgt een object binnen die alle noodzakelijke gegevens bevat om de opbouw op te starten. Dit object wordt omgevormd om in de volgende stap door te sturen naar de Queue-trigger. Tot slot geeft de functie een resultaat terug naar de aanroeper om aan te geven dat de aanroep succesvol was.
 \newline
 \newline
