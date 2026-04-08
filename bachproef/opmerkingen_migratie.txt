@@ -1,0 +1,15 @@
+=== Migratie DatasetGenerator ===
+
+- Nieuw project
+-- .NET Core 3.1 naar .NET 8 Isolated
+-- DockerFile toevoegen (enkel dll's van relevante packages)
+-- enke files die relevant zijn voor het onderzoek, alsook de logica
+- van EntityFramework 6 naar Entity Framework Core 8
+-- CalculateGeographicalDistance in GpsHelper moet verplaatst worden naar Tracering.cs en vermeldt worden in OnModelCreating(GpsHelper is niet gekend in Database project)
+-- database context in Program.cs
+-- Dependency Injection ipv initialisatie van classes in constructors
+-- refactor naar .NET 8 syntax (optioneel)
+-- nodige packages upgraden naar 8.0.25
+--- Microsoft.EntityFrameworkCore.Tools
+--- Microsoft.EntityFrameworkCore.Design
+--- Microsoft.EntityFrameworkCore.SqlServer

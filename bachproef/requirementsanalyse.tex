@@ -54,10 +54,10 @@ Vervolgens kunnen de brongegevens toegevoegd worden. Dit kan aangeleverd worden 
     \label{fig:flowchart_werking}
 \end{figure}
 
-Het uiteindelijke doel van de functie is om meetdata te linken aan bomen op een teelt op basis van GPS-locaties. Dit proces is tweeledig en bestaat uit 2 triggers: een HTTP-trigger en een Queue-trigger. Wanneer de gebruiker op de knop \textit{Genereer dataset} klikt, wordt de HTTP-trigger geactiveerd. Deze functie krijgt een object binnen die alle noodzakelijke gegevens bevat om de opbouw op te starten. Dit object wordt omgevormd om in de volgende stap door te sturen naar de Queue-trigger. Tot slot geeft de functie een resultaat terug naar de aanroeper om aan te geven dat de aanroep succesvol was.
+Het uiteindelijke doel van de functie is om meetdata te linken aan bomen op een teelt op basis van GPS-locaties. Dit proces is tweeledig en bestaat uit 2 triggers: een HTTP-trigger en een Queue-trigger. Wanneer de gebruiker op de knop \textit{Genereer dataset} klikt, wordt de HTTP-trigger geactiveerd. Deze functie krijgt een object binnen dat alle noodzakelijke gegevens bevat om de opbouw op te starten. Dit object wordt omgevormd om in de volgende stap door te sturen naar de Queue-trigger. Tot slot geeft de functie een resultaat terug naar de aanroeper om aan te geven dat de aanroep succesvol was.
 \newline
 \newline
-De tweede functie in dit proces, de Queue-trigger, bevat de effectieve logica die de dataset genereert. Dit ontvangt het object die verzonden werd door de HTTP-trigger. Dit object wordt gebruikt om te bepalen uit welke bron de gegevens komen. Deze bron kan bestaan uit de volgende types:
+De tweede functie in dit proces, de Queue-trigger, bevat de effectieve logica die de dataset genereert. Dit ontvangt het object dat verzonden werd door de HTTP-trigger. Dit object wordt gebruikt om te bepalen uit welke bron de gegevens komen. Deze bron kan bestaan uit de volgende types:
 
 \begin{itemize}
     \item CSV
@@ -67,15 +67,15 @@ De tweede functie in dit proces, de Queue-trigger, bevat de effectieve logica di
     \item NMEA
 \end{itemize}
 
-Elk type vereist een andere logica om de dataset te genereren. Dit komt voornamelijk doordat de bestandstypes van de bron gegevens verschillen en op een andere manier opgehaald en verwerkt moeten worden. Dit wordt verder duidelijk in de beschrijving van de logica.
+Elk type vereist een andere logica om de dataset te genereren. Dit komt voornamelijk doordat de bestandstypes van de brongegevens verschillen en op een andere manier opgehaald en verwerkt moeten worden. Na bespreking met de co-promotor is er beslist om voor het onderzoek enkel te focussen op \textbf{CSV} en \textbf{Shapefile} als brontype.  
 
 \begin{enumerate}
     \item \textbf{Initialisatie} \\
-    Het systeem haalt alle relevante gegevens uit de database op. Dit omvat de specifieke teeltinformatie, de bronbestanden en de gedefinieerde datalagen die aan de dataset gekoppeld zijn. Het systeem zet ook de status van de dataset op \textit{Genereren} en reset de grenswaarden voor verdere berekeningen en kleurbepalingen. Vervolgens wordt er per teelt de master file opgehaald. Dit is de blauwdruk van de teelt en bevat alle GPS-locaties.
+    Het systeem haalt alle relevante gegevens uit de database op. Dit omvat de specifieke teeltinformatie, de bronbestanden en de gedefinieerde datalagen die aan de dataset gekoppeld zijn. Het systeem zet ook de status van de dataset op \textit{Genereren} en reset de grenswaarden voor verdere berekeningen en kleurbepalingen. Vervolgens wordt er per teelt de masterfile opgehaald. Dit is de blauwdruk van de teelt en bevat alle GPS-locaties.
     \item \textbf{Inname Brongegevens} \\
-    Dit is het enige punt dat per type echt verschilt. Per teelt worden alle bronbestanden overlopen en opgehaald op een manier dat het type ondersteund. Voor CSV/NMEA/Manueel wordt de tekststroom geopend en regel per regel gelezen. Bij Shapefile wordt een geografisch kaartbestand geopend en ``geprojecteerd''. Bij Waarnemingen wordt de database geraadpleegd. 
+    Dit is het enige punt dat per type echt verschilt. Per teelt worden alle bronbestanden overlopen en opgehaald op een manier dat het type ondersteund. Voor CSV wordt de tekststroom geopend en regel per regel gelezen. Bij Shapefile wordt een geografisch kaartbestand geopend en ``geprojecteerd''.
     \item \textbf{Koppeling} \\
-    Deze fase is de kern van het proces. Per datapunt zoekt het systeem de juiste boom op de plattegrond. Komt de ID van de boom voor in de data, dan is er een directe match. In dit geval wordt de waarde meteen op die boom toegewezen. Is er enkel een GPS-locatie? Dan trekt het systeem een cirkel rondom dat punt en kijkt het welke boom daarbinnen valt. Bij NMEA combineert het systeem eerst de locatie met de snelheid, alvorens het gaat matchen. Bij waarnemingen krijgt elke boom binnen de radius de waarde van de melding.
+    Deze fase is de kern van het proces. Per datapunt zoekt het systeem de juiste boom op de plattegrond. Komt de ID van de boom voor in de data, dan is er een directe match. In dit geval wordt de waarde meteen op die boom toegewezen. Is er enkel een GPS-locatie? Dan trekt het systeem een cirkel rondom dat punt en kijkt het welke boompunten daarbinnen vallen.
     \item \textbf{Validatie en Normalisatie} \\
     Nu de data op de kaart ligt, moet dit verfijnd worden. Zo worden bomen die niet tot de geselecteerde variëteit behoren uit de dataset verwijderd. Ook wordt er voor elke boom de definitieve waarde berekend voor de datalaag. Het systeem onthoudt hierbij wat de hoogste en de laagste waarde was over de volledige boomgaard en gebruikt dit voor de legenda om de data te normaliseren.
     \item \textbf{Output} \\
@@ -85,9 +85,83 @@ Elk type vereist een andere logica om de dataset te genereren. Dit komt voorname
 \end{enumerate}
 
 \section{Functionele Eisen}
+% WAT?
+\begin{table}[H]
+    \centering
+    \caption{Functionele Eisen (FE)}
+    \label{tab:functionele_eisen}
+    \begin{tabular}{|l|p{15cm}|}
+        \hline
+        \textbf{ID} & \textbf{Beschrijving} \\ \hline
+        FE1 & Het systeem moet een REST-endpoint (POST) beschikbaar stellen dat een \textit{DatasetGeneratorRequest}-object in JSON accepteert. \\ \hline
+        FE2 & Om time-outs van de client te voorkomen, moet de HTTP-functie het verzoek valideren en in een wachtrij plaatsen, alvorens een succesmelding terug te sturen. Deze output geeft aan dat het achtergrondproces succesvol gestart is. \\ \hline
+        FE3 & Het systeem moet automatisch een verwerkingsproces starten zodra er een nieuw bericht in de wachtrij verschijnt. \\ \hline
+        FE4 & Het systeem moet een basisbestand (teelt masterfile) kunnen lezen uit Azure Blob Storage.  \\ \hline
+        FE5 & Het systeem moet CSV- en Shapefile-bestanden kunnen inlezen en verwerken. \\ \hline
+        FE6 & Het systeem moet op basis van het brontype de juiste verwerkingslogica kunnen uitvoeren om verschillende bestandsstructuren te ondersteunen. \\ \hline
+        FE7 & Het systeem moet meetdata aan bomen kunnen koppelen op basis van unieke identificatie (ID) of geografische nabijheid via een instelbare radius. \\ \hline
+        FE8 & Het systeem moet bomen kunnen filteren op variëteit en een legenda berekenen op basis van de minimum- en maximumwaarden uit de dataset. \\ \hline
+        FE9 & Het systeem moet relevante gegevens kunnen ophalen uit een database en de status van het generatieproces kunnen bijwerken in de database, zodat de client de voortgang kan monitoren. \\ \hline
+        FE10 & Het systeem moet het eindresultaat kunnen opslaan in de Cloud (Azure Blob Storage). \\ \hline
+    \end{tabular}
+\end{table}
 
 \section{Niet-Functionele Eisen}
+% HOE GOED?
+\begin{table}[H]
+    \centering
+    \caption{Niet-Functionele Eisen (NFE)}
+    \label{tab:niet_functionele_eisen}
+    \begin{tabular}{|l|p{15cm}|}
+        \hline
+        \textbf{ID} & \textbf{Beschrijving} \\ \hline
+        NFE1 & Het systeem moet vanuit een inactieve staat binnen 10 seconden een eerste HTTP-verzoek kunnen afhandelen. Deze 10 seconden is een gemiddelde van 30 uitvoeringen. \\ \hline
+        NFE2 & Het systeem moet een standaard test-dataset (definitie in PoC) gemiddeld binnen 5 minuten kunnen verwerken, inclusief database interactie en cloud-opslag. Deze 5 minuten is een gemiddelde van 30 uitvoeringen. \\ \hline
+        NFE3 & Het systeem moet automatisch een extra container-instantie opstarten, zodra een nieuw bericht in de wachtrij komt. Elk verzoek is CPU intensief en op deze manier wordt er garandeert dat elke verzoek meteen verwerkt wordt wat tot een snellere doorvoersnelheid zal leiden.  \\ \hline
+        NFE4 & Het systeem moet in staat zijn om 50 gelijktijdige verzoeken in de wachtrij te accepteren zonder dat de HTTP-endpoint onbereikbaar wordt of dataverlies optreedt. \\ \hline
+        NFE5 & Het systeem moet elke actieve container-instantie meteen afsluiten nadat het verzoek afgehandeld is. \\ \hline
+        NFE6 & Het systeem moet als Docker-container kunnen draaien op zowel Azure Container Apps als Google Cloud Run. \\ \hline
+        NFE7 & Het systeem moet op beide platformen een identieke output genereren bij het gebruik van dezelfde brongegevens, ongeacht de onderliggende infrastructuur. \\ \hline
+    \end{tabular}
+\end{table}
 
 \section{Technische en Architecturale Eisen}
+% WELKE TOOLS?
+\begin{table}[H]
+    \centering
+    \caption{Technische en Architecturale Eisen (TE)}
+    \label{tab:technische_eisen}
+    \begin{tabular}{|l|p{15cm}|}
+        \hline
+        \textbf{ID} & \textbf{Beschrijving} \\ \hline
+        TE1 & De bestaande applicatie wordt van .NET Core 3.1 naar .NET 8 gemigreerd. Deze upgrade is noodzakelijk, omdat .NET Core 3.1 niet meer ondersteund wordt en .NET 8 geoptimaliseerde prestaties en libraries biedt die essentieel zijn voor een efficiënte container-runtime. Zo kan de vergelijking van Azure Container Apps en Google Cloud Run gebeuren op basis van een actuele en veilige software stack en zonder technical debt. \\ \hline
+        TE2 & De migratie naar .NET 8 gebeurt volgens het Isolated Worker Model. Dit ontkoppelt het proces van de Azure Functions host-runtime. Dit is noodzakelijk om:
+        \begin{itemize}[nosep, leftmargin=*]
+            \item Volledige controle te hebben over Dependency Injection en Middlewares
+            \item Stabiliteit binnen de Docker-container te verhogen door procesisolatie
+            \item Een eerlijke vergelijking op Google Cloud Run mogelijk te maken, aangezien dit model zich meer gedraagt als een standaard web applicatie.
+        \end{itemize} \\ \hline
+        TE3 & De Docker-container wordt gebouwd op basis van de officiële Microsoft Azure Functions runtime image. Dit zorgt voor een identieke runtime-omgeving op zowel Azure als Google Cloud. \\ \hline
+        TE4 & De container moet stateless zijn. Alle data waarvan een staat moet bijgehouden worden, moet extern gepersisteerd worden. Zo wordt de status van de dataset opgeslagen in een SQL database en wordt de gegenereerde dataset weggeschreven naar een Cloud Object Storage, bij voorkeur Azure Blob Storage. \\ \hline
+        TE5 & Configuratie-instellingen mogen niet worden opgenomen in de image. Dit moet gebeuren door \textit{environment variables} mee te geven aan de container. Dit waarborgt de flexibiliteit tussen de cloudomgevingen. \\ \hline
+        TE6 & De Docker-image moet door beide platformen opgehaald worden uit een centrale registry om te garanderen dat dezelfde bit-versie van de software getest wordt. \\ \hline
+        TE7 & Er worden geen platformspecifieke optimalisaties gebruikt (zoals Startup CPU Boost bij GCR of native Functions-integraties op ACA). Dit zorgt ervoor dat de pure prestaties van de onderliggende infrastructuur gemeten worden. \\ \hline
+        TE8 & De container moet metrics en logs genereren via de standaard output, zodat dit door externe testtooling gecapteerd kan worden. \\ \hline
+    \end{tabular}
+\end{table}
 
 \section{Operationele Eisen}
+% HOE METEN?
+\begin{table}[H]
+    \centering
+    \caption{Operationele Eisen (OE)}
+    \label{tab:operationele_eisen}
+    \begin{tabular}{|l|p{15cm}|}
+        \hline
+        \textbf{ID} & \textbf{Beschrijving} \\ \hline
+        OE1 & Het systeem moet via de \texttt{ILogger}-interface processtappen en foutmeldingen vastleggen naar de \textit{standard output} (\texttt{stdout}). Dit waarborgt dat logs op uniforme wijze gecapteerd worden door zowel Azure Monitor als Google Cloud Logging, zonder platformspecifieke aanpassingen. \\ \hline
+        OE2 & De infrastructuur moet inzicht bieden in het actuele CPU- en geheugengebruik per actieve container-instantie. Dit is noodzakelijk om de oorzaak van de CPU-problemen uit de oorspronkelijke case van Agromanager te kunnen analyseren op de nieuwe platformen. \\ \hline
+        OE3 & Elk verzoek moet voorzien zijn van een uniek ID in de logs. Dit is cruciaal om de volledige levenscyclus van een verwerking te kunnen volgen over de 30 verschillende testruns heen. \\ \hline
+        OE4 & De HTTP-endpoints van de container moeten bereikbaar zijn voor het externe Python-meetscript, zodat responstijden en foutpercentages automatisch en consistent geregistreerd kunnen worden. \\ \hline
+    \end{tabular}
+\end{table}
