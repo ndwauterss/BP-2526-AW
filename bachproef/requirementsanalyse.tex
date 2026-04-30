@@ -1,7 +1,7 @@
 \chapter{\IfLanguageName{dutch}{Requirements-analyse}{Requirements analysis}}%
 \label{ch:requirements-analyse}
 
-Dit hoofdstuk brengt de functionele en niet-functionele eisen van de huidige Azure Function in kaart om een diepgaand inzicht te krijgen in het probleemdomein. In combinatie met de literatuurstudie zal deze analyse het technisch kader vormen voor de configuraties van de container-omgevingen. Dit waarborgt een objectieve vergelijking van Azure Container Apps en Google Cloud Run en ondersteunt op deze manier de proof-of-concept in het volgende hoofdstuk.
+Dit hoofdstuk beschrijft eerst waar de functie zich bevindt in de applicatie van Agromanager en welk nut het heeft voor de gebruiker. Hierop volgt een beschrijving van de functionele werking van deze toepassing om een idee te krijgen hoe het technisch in elkaar zit. Vervolgens worden de functionele en niet-functionele eisen van de huidige Azure Function in kaart gebracht om de spelregels van het toegepast onderzoek vast te leggen. Daarna bekijken we welke technische en architecturale eisen er zijn om het speelveld te kaderen. In combinatie met de literatuurstudie vormt deze analyse het technisch kader voor de configuraties van de container-omgevingen. Dit waarborgt een objectieve vergelijking van Azure Container Apps en Google Cloud Run en ondersteunt op deze manier de proof-of-concept in het volgende hoofdstuk.
 
 \section{Context: Agromanager}
 
@@ -118,7 +118,7 @@ Elk type vereist een andere logica om de dataset te genereren. Dit komt voorname
         NFE1 & Het systeem moet vanuit een inactieve staat binnen 10 seconden een eerste HTTP-verzoek kunnen afhandelen. Deze 10 seconden is een gemiddelde van 30 uitvoeringen. \\ \hline
         NFE2 & Het systeem moet een standaard test-dataset (definitie in PoC) gemiddeld binnen 5 minuten kunnen verwerken, inclusief database interactie en cloud-opslag. Deze 5 minuten is een gemiddelde van 30 uitvoeringen. \\ \hline
         NFE3 & Het systeem moet automatisch een extra container-instantie opstarten, zodra een nieuw bericht in de wachtrij komt. Elk verzoek is CPU intensief en op deze manier wordt er garandeert dat elke verzoek meteen verwerkt wordt wat tot een snellere doorvoersnelheid zal leiden.  \\ \hline
-        NFE4 & Het systeem moet in staat zijn om 50 gelijktijdige verzoeken in de wachtrij te accepteren zonder dat de HTTP-endpoint onbereikbaar wordt of dataverlies optreedt. \\ \hline
+        NFE4 & Het systeem moet in staat zijn om 30 gelijktijdige verzoeken in de wachtrij te accepteren zonder dat de HTTP-endpoint onbereikbaar wordt of dataverlies optreedt. \\ \hline
         NFE5 & Het systeem moet elke actieve container-instantie meteen afsluiten nadat het verzoek afgehandeld is. \\ \hline
         NFE6 & Het systeem moet als Docker-container kunnen draaien op zowel Azure Container Apps als Google Cloud Run. \\ \hline
         NFE7 & Het systeem moet op beide platformen een identieke output genereren bij het gebruik van dezelfde brongegevens, ongeacht de onderliggende infrastructuur. \\ \hline

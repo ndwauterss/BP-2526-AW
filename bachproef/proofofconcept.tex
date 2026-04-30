@@ -1,2 +1,67 @@
 \chapter{\IfLanguageName{dutch}{Proof-of-Concept}{Proof-of-Concept}}%
 \label{ch:proof-of-concept}
+
+Dit hoofdstuk beschrijft de realisatie van de Proof-of-Concept (PoC). Er wordt gestart met een technische analyse van de huidige toepassing binnen het probleemdomein, gevold door een verantwoording van de migratie naar een modern, container-native framework. Vervolgens wordt besproken hoe de testomgevingen in Azure Container Apps en Google Cloud Run opgezet zijn. Bij een PoC horen ook steeds technische uitdagingen en limitaties die aangekaart moeten worden, aangezien ze aanzetten tot bepaalde keuzes. Na dit cruciaal onderdeel volgt een bespreking van de strategieën die toegepast zijn om de meetdata te borgen. Tot slot worden de tools, uitvoeringsprotocol en testcases gedefinieerd om de lezer een volledig inzicht te geven in hoe de oplossingen zijn opgezet en gevalideerd.
+
+\section{Technische Analyse van de Artifact}
+
+% Beschrijving van de .NET logica, de zwaarte van de berekeningen en de code-structuur + welke technische keuzes bij de omzetting van bestaande code naar nieuwe manier
+
+\section{Architectuur en Systeemontwerp}
+
+%\subsection*{Keuzes}
+
+%- Waarom migratie naar .NET 8?
+%- Waarom Isolated Worker Model?
+
+%\subsection*{Migratiestappen}
+
+%- DockerFile: hoe opgebouwd en waarom?
+%- Includes toevoegen bij database calls in EF
+%- DI voor DbContext => vergt aanpassing in legacy code
+%- DI voor BlobServiceClient => AzureHelper legacy code creeërt telkens een nieuw object. Aangezien we nu met de Isolated Worker Model zitten en dit de standaard wordt, lijkt het beter om een DI te doen van deze service en dit mee te geven in de functions van de AzureHelper. 2 opties. We zetten AzureHelper functies naar een interface + We maken de AzureHelperV2 die deze interface overneemt. Deze v2 is niet static en wordt via DI in de functions class binnengehaald. Deze helper wordt vervolgens meegegeven in de processors. Optie 2: we nemen de BlobServiceClient binnen in de function class en geven deze door naar de processor classes. Deze classes geven dit mee via de functies van de legacy AzureHelper.
+
+%Aangezien we 30x gaan runnen en er per run een nieuwe initialisatie gaat gebeuren van een instantie van de container, kan er geen connectie naar Azure Blob Storage hergebruikt worden over de instanties heen. Maar deze connectie kan wel hergebruikt worden binnen 1 instantie. Aangezien per teelt loop een call naar Azure Blob Storage gedaan wordt en vervolgens binnen deze loop er nog een loop plaatsvindt waarin nog eens een call gedaan wordt naar deze storage en tot slot nog 2 calls op het einde kan dit voor wat vertraging zorgen. Zeker bij Google Cloud Run omdat de ``afstand'' naar Azure verder is. Dus om het meer portable te maken zou ik dit migreren naar een DI-manier.
+
+\section{Opzet van de Testomgevingen}
+
+%\subsection*{Azure SQL Database}
+
+%Free database gekozen die gebruik maakt van serverless vCore model. Dit betekent dat de db in pauze gaat na 1u. Bij de 1ste request kan het 10-30 sec duren alvorens deze terug opgestart is. Belangrijk dus om te kijken of we de database nog moeten aanpassen naar een DTU versie. Voor nu laten we het zo, omdat dit gratis is.
+
+%- stappenplan
+
+%\subsection*{Azure Blob Storage}
+
+%- Hot tier
+%- locally redundant storage
+%- standard
+%- 3 containers aangemaakt
+%- stappenplan
+
+%\subsection*{Container Registry}
+
+%- waarom een centrale Container Registry gebruiken? => afstand voor Azure en Google beiden hetzelfde + portabiliteit
+%- waarom Github Container Registry? => gratis voor kleine projecten + Github Action om bij elke commit de container te builden
+%- stappenplan
+
+%\subsection*{Azure Container Apps}
+
+%- de optie ``optimaliseer voor azure functions'' wordt niet aangezet
+%- CI/CD => Github Action zet de nieuwe image klaar, dan nieuwe revision maken die dan de laatste versie van de image ophaalt van GHCR. Dit is een tussenstap zodat productie code niet automatisch aangepast wordt, maar gecontroleerd.
+
+%\subsection*{Google Cloud Run}
+
+\section{Implementatie-uitdagingen en Mitigatiestrategieën}
+
+\section{Tooling en Automatisering}
+
+\section{Uitvoeringsprotocol}
+
+%\subsection*{Definitie}
+
+%\subsection*{inhoud}
+
+\section{Definitie van de Testcases}
+
+\section{Validatie van de Meetopstelling}
