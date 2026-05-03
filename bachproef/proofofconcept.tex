@@ -1,37 +1,150 @@
 \chapter{\IfLanguageName{dutch}{Proof-of-Concept}{Proof-of-Concept}}%
 \label{ch:proof-of-concept}
 
-Dit hoofdstuk beschrijft de realisatie van de Proof-of-Concept (PoC). Er wordt gestart met een technische analyse van de huidige toepassing binnen het probleemdomein, gevold door een verantwoording van de migratie naar een modern, container-native framework. Vervolgens wordt besproken hoe de testomgevingen in Azure Container Apps en Google Cloud Run opgezet zijn. Bij een PoC horen ook steeds technische uitdagingen en limitaties die aangekaart moeten worden, aangezien ze aanzetten tot bepaalde keuzes. Na dit cruciaal onderdeel volgt een bespreking van de strategieën die toegepast zijn om de meetdata te borgen. Tot slot worden de tools, uitvoeringsprotocol en testcases gedefinieerd om de lezer een volledig inzicht te geven in hoe de oplossingen zijn opgezet en gevalideerd.
+Dit hoofdstuk beschrijft de realisatie van de Proof-of-Concept (PoC). Er wordt gestart met een technische analyse van de huidige toepassing binnen het probleemdomein, gevolgd door een verantwoording van de migratie naar een modern, container-native framework. Vervolgens wordt besproken hoe de testomgevingen in Azure Container Apps en Google Cloud Run opgezet zijn. Bij een PoC horen ook steeds technische uitdagingen en limitaties die aangekaart moeten worden, aangezien ze aanzetten tot bepaalde keuzes. Na dit cruciaal onderdeel volgt een bespreking van de strategieën die toegepast zijn om de meetdata te borgen. Tot slot worden de tools, uitvoeringsprotocol en testcases gedefinieerd om de lezer een volledig inzicht te geven in hoe de oplossingen zijn opgezet en gevalideerd.
 
 \section{Technische Analyse van de Artifact}
 
-% Beschrijving van de .NET logica, de zwaarte van de berekeningen en de code-structuur + welke technische keuzes bij de omzetting van bestaande code naar nieuwe manier
+De huidige toepassing is tweeledig. Enerzijds hebben we een HttpTrigger die de synchrone verwerking voor zich neemt. Anderzijds hebben we een QueueTrigger die de asynchrone verwerking van de zware taak uitvoert. De reden van deze opzet is om de gebruiker zo snel mogelijk een antwoord te kunnen geven dat de generatie van de dataset begonnen is. Op deze manier moet er niet gewacht worden op de volledige verwerking van de set, wat meerdere minuten in beslag neemt. De asynchrone verwerking update de status van de dataset op bepaalde momenten in de verwerking. Deze status wordt om de 5 seceonden opgevraagd in het scherm waar het proces geactiveerd werd en maakt het mogelijk voor de gebruiker om tussendoor andere acties te doen in Agromanager. 
 
-\section{Architectuur en Systeemontwerp}
+\subsection{HttpTrigger} 
 
-%\subsection*{Keuzes}
+De HttpTrigger is een Azure function die een POST endpoint ter beschikking stelt voor Agromanager. Dit kan aangeroepen worden vanuit Agromanager en ontvangt bepaalde gegevens die noodzakelijk zijn voor de opstart van het proces. Deze gegevens komen binnen via de Body van een HttpRequest object. De Body wordt vervolgens omgezet naar een string in JSON-formaat door middel van een StreamReader en in de volgende stap gedeserialiseerd naar een DatasetGeneratorRequest object. Dit object bevat volgende eigenschappen:
+\begin{itemize}
+    \item GpsDatasetID: \\ID van de dataset, nodig om op te halen welke teelten hieraan gekoppeld zijn en welke bestanden met meetdata hier bijhoren.
+    \item GpsDatasetSource: \\Een enum-waarde die later gebruikt zal worden om te bepalen welk type processor er nodig is bij het genereren. Bv.: Shapefile, CSV, etc.
+    \item AgroID: \\ID van de Agromanager-omgeving. Dit wordt gebruikt om te bepalen welke database er nodig is voor het ophalen en wegschrijven van data.
+    \item CompanyName: \\Bedrijfsnaam van de omgeving. Dit heeft dezelfde functie als een AgroID.
+\end{itemize}
 
-%- Waarom migratie naar .NET 8?
-%- Waarom Isolated Worker Model?
+Het verkregen object wordt in de volgende stap naar een Azure Storage Queue gestuurd, waar het in een wachtrij terecht komt om verwerkt te worden. Tot slot wordt een OkObjectResult teruggeven naar de aanvrager wat resulteert in een Status 200 OK.
 
-%\subsection*{Migratiestappen}
+\subsection{QueueTrigger}
 
-%- DockerFile: hoe opgebouwd en waarom?
-%- Includes toevoegen bij database calls in EF
-%- DI voor DbContext => vergt aanpassing in legacy code
-%- DI voor BlobServiceClient => AzureHelper legacy code creeërt telkens een nieuw object. Aangezien we nu met de Isolated Worker Model zitten en dit de standaard wordt, lijkt het beter om een DI te doen van deze service en dit mee te geven in de functions van de AzureHelper. 2 opties. We zetten AzureHelper functies naar een interface + We maken de AzureHelperV2 die deze interface overneemt. Deze v2 is niet static en wordt via DI in de functions class binnengehaald. Deze helper wordt vervolgens meegegeven in de processors. Optie 2: we nemen de BlobServiceClient binnen in de function class en geven deze door naar de processor classes. Deze classes geven dit mee via de functies van de legacy AzureHelper.
+\subsubsection*{Highlevel}
 
-%Aangezien we 30x gaan runnen en er per run een nieuwe initialisatie gaat gebeuren van een instantie van de container, kan er geen connectie naar Azure Blob Storage hergebruikt worden over de instanties heen. Maar deze connectie kan wel hergebruikt worden binnen 1 instantie. Aangezien per teelt loop een call naar Azure Blob Storage gedaan wordt en vervolgens binnen deze loop er nog een loop plaatsvindt waarin nog eens een call gedaan wordt naar deze storage en tot slot nog 2 calls op het einde kan dit voor wat vertraging zorgen. Zeker bij Google Cloud Run omdat de ``afstand'' naar Azure verder is. Dus om het meer portable te maken zou ik dit migreren naar een DI-manier.
+Wanneer het bericht in de wachtrij opgepikt wordt om te verwerken, wordt de QueueTrigger aangeroepen. Dit bevat het zwaarste onderdeel van het proces en start met het bepalen van welke FileProcessor er nodig is op basis van de waarde in de GpsDatasetSource-eigenschap van het DatasetGeneratorRequest-object. Deze keuze wordt gedaan door gebruik te maken van het Strategy Pattern. Deze FileProcessors passen elk de interface IFileProcessor toe, die een functie beschikbaar maakt die dynamisch ingevuld kan worden in de runtime van de code. Dit maakt het mogelijk om later makkelijk nieuwe FileProcessors toe te voegen zonder de bestaande code drastisch te moeten aanpassen. In de QueueTrigger wordt enkel de logica van het Strategy Pattern aangeroepen, gevolgd met de aanroep van de dynamische functie. De logica van het Strategy Pattern wordt voorafgegaan met een using-statement om de database te disposen, nadat het proces is uitgevoerd. Dit is nodig omdat de instantie van de database manueel aangemaakt wordt en dus ook manueel opgekuist moet worden. 
+
+\subsubsection*{FileProcessor}
+
+De effectieve verwerkingslogica van de dataset bevindt zich in de implementatieklasses van de IFileProcessor-interface. Elke FileProcessor volgt in grote lijnen dezelfde structuur, maar verschilt op het vlak van ophalen en verwerken van de inhoud van de bestanden die gelinkt zijn aan de dataset en die de boomdata bevatten. Hoe deze logica functioneel werkt werd eerder besproken in het hoofdstuk van de Requirementsanalyse (\ref{pr:flow-generatie}). 
+
+\subsection{Computationele Karakteristieken}
+
+Om beter te begrijpen waarom de verwerkingslogica als zwaar wordt gezien en waarom het meerdere minuten kan duren om een dataset te generen, wordt hier besproken wat de karakteristieken zijn.
+
+\subsubsection*{Geneste Iteraties}
+
+De code bevat diepe geneste foreach-lussen die zorgen voor een verwerkingscomplexiteit van $O(n^4)$. Bij grote datasets zorgt dit voor een exponentiële toename van de verwerkingstijd.
+
+\begin{equation}
+    O(T \cdot B \cdot L \cdot P) \approx O(n^4)
+\end{equation}
+waarbij:
+\begin{itemize}
+    \item $T$ = Aantal Teelten: loopt door alle teelten gelinkt aan de dataset.
+    \item $B$ = Aantal Bestanden: loopt per teelt door alle bestanden gelinkt aan de dataset.
+    \item $L$ = Aantal Punten/Lijnen (CSV-regels of Shapefile features): loopt per teelt, per bestand door alle lijnen of punten die uit het bestand komen.
+    \item $P$ = Aantal Bomen in het perceel: loopt per teelt, per bestand, per lijn of punt uit bestand door alle bomen in de teelt.
+\end{itemize}
+
+Dit zal bij een gemiddelde dataset zorgen voor miljoenen iteraties. In combinatie met geografische berekeningen zorgt dit voor een constante druk op de CPU en de schaalbaarheid van de omgeving.
+
+\subsubsection*{Geometrische en Ruimtelijke Berekeningen}
+
+Een verwerking in de CsvProcessor duurt minder lang en zal ook minder intensief zijn voor de CPU, dan bij de ShapeFileProcessor. Dit komt doordat er bij een CSV-bestand enkel gewerkt wordt met tekstuele waarden om de lijnen of punten uit het bestand te halen. Bij een Shapefile moeten er actieve ruimtelijke transformaties uitgevoerd worden. In de code zie je per rij in het bestand dat de functie file.Reproject(...) uitgevoerd wordt. Dit komt er op neer dat er per lijn of punt in het bestand de CPU complexe goniometrische berekeningen moet uitvoeren om coördinaten om te zetten naar de WGS1984-standaard.
+\\ 
+\\
+Dit neemt niet weg dat de CsvProcessor ook intensief kan zijn voor de CPU. Een bestand (zowel CSV als Shapefile) kan data bevatten per Boom- en/of TeeltID. In dit geval is er minder verwerkingstijd nodig, want dan kan de meetdata rechtstreeks gekoppeld worden aan de boom. De BoomID in het bestand matcht direct met de BoomID van de teelt. Echter is het ook mogelijk dat het bestand geen Boom- of TeeltID's bevat. In dit geval moet er per punt van het bestand een cirkel getrokken worden rond elke boompunt van de teelt. Vervolgens moet berekend worden op basis van latitude en longitude of het punt in het bestand binnen de cirkel van de boom ligt. Dit legt een constante druk op de CPU. Bij een Shapefile is deze druk nog iets hoger, omdat dit meestal meer datapunten bevat dan een CSV, wat voor meer berekeningen zorgt.
+
+\subsubsection*{Geheugenintensieve taken}
+
+Per teelt wordt een masterfile opgehaald uit Azure Blob Storage die gedeserialiseerd wordt naar een objectmodel. Dit model wordt de hele tijd in het geheugen bijgehouden en ook gemanipuleerd door waarden aan de bomen toe te voegen. Hierdoor stijgt het RAM-gebruik en krijgt de .NET Garbage Collector veel werk, wat de verwerking onderbreekt. 
+
+\subsubsection*{Database en I/O interactie}
+
+Per teelt, per bestand en ook per 100 regels in het bestand wordt er een statusupdate weggeschreven naar de database. Dit is noodzakelijk om de gebruiker op de hoogte te brengen van de voortgang. Echter zorgt dit ook voor wachttijden op I/O, waardoor CPU-threads langer bezet blijven. 
+
+\subsubsection*{Data-transformatie en Opslag}
+
+De masterfile die als objectmodel in het geheugen leeft, wordt op het einde opnieuw geserialiseerd en naar Azure Blob Storage weggeschreven. Dit bestand kan veel data bevatten met vele megabytes tot gevolg. Dit moet in één keer gebeuren, wat ook hier zorgt voor een piek in het RAM-gebruik en de hoeveelheid werk voor de Gargbage Collector.
+
+\subsection{Technologische Stack}
+
+\begin{description}
+    \item[.NET Core 3.1 (In-Process):]
+    Het framework waarop de huidige toepassing momenteel draait. Het In-Process model houdt in dat de applicatiecode in hetzelfde proces draait als de Azure Functions-runtime, waardoor resources gedeeld worden.
+    \item[Azure Functions (App Service Plan):]
+    De huidige toepassing wordt gehost als een Function app in Azure. De compute-omgeving is App Service Plan. Dit houdt in dat er vaste resources zijn toegewezen die gedeeld worden door alle function apps in dit plan. 
+    \item[Entity Framework Core:]
+    De Object-Relational Mapper (ORM) die gebruikt wordt voor de communicatie met de onderliggende SQL Databases.
+    \item[SQL Database:]
+    Database die gebruikt wordt om data op te halen of te persisteren, waaronder het updaten van de status.
+    \item[Azure Blob Storage:]
+    Centrale opslagplaats voor bronbestanden (masterfile, CSV, Shapefile) en de resultaatbestanden.
+    \item[Azure Storage Queue:]
+    Wachtrij in de cloud die taken in een bepaalde volgorde afhandelt. Dit triggert de QueueTrigger in de huidige toepassing.
+\end{description}
+
+Deze stack vormt de technische baseline. Beperkingen in isolatie (In-Process) en de specifieke koppeling met Azure-native componenten zoals Azure Storage Queue, vormen de aanleiding voor de migratie naar een container-native architectuur in het kader van deze Proof-of-Concept.
+
+\section{Migratie en Modernisatie}
+
+Om de bestaande toepassing te migreren naar de testomgevingen werd er een nieuw project opgestart. Dit project werd voorzien met componenten van de code die noodzakelijk waren om de dataset te genereren. Andere complexiteiten werden geabstraheerd.
+Bij de migratie kwam naar boven dat er aanpassingen in de code nodig waren. Dit zorgde voor een uitgelezen kans om de \textit{technical debt} te verminderen. Toch is er geprobeerd om de bestaande, noodzakelijke code zo min mogelijk aan te passen om de core functionaliteit van het genereren te behouden. Dit waarborgt een eerlijke vergelijking met de huidige toepassing en de nieuwe oplossingen, omdat de business logica hetzelfde bleef. Bij het opzetten van de testomgevingen kwamen ook nog uitdagingen naar boven die invloed hebben gehad op de code en de keuze van bepaalde tools. 
+
+\subsection{Framework-transitie: .NET 8 Isolated Worker Model}
+
+De huidige toepassing draait op .NET Core 3.1. Deze versie is \textit{end of life} en wordt niet verder ondersteund. Anderzijds is deze versie ook voorzien van het In-Process model wat betekent dat de runtime en de worker in hetzelfde proces draaien. Dit zijn kenmerken die niet ideaal zijn voor een toepassing die moet draaien in een container. Hierdoor werd er gekozen om de applicatie te migreren naar .NET 8 met het Isolated Worker model. Dit scheidt het proces van de runtime met het proces van de worker. De testomgevingen bevinden zich in 2 verschillende cloudproviders. Hierdoor is het een vereiste dat de runtime en de applicatiecode geïsoleerd worden van elkaar, omdat elke provider een andere runtime heeft. .NET 8 is ook gebouwd met de focus op container-omgevingen, waardoor het logisch is om de bestaande toepassing te migreren naar deze versie. Deze keuze heeft er voor gezorgd dat er Nuget packages voor de SDK van de worker geïnstalleerd moesten worden, alsook werd de versie van Entity Framework geüpdatet naar een 8.x versie. Bij het testen van de code na transitie naar de nieuwe versie kwam ook boven dat er \textit{Includes} ontbraken bij het ophalen van data via EF. Door lazy loading bleven bepaalde gelinkte objecten leeg, waardoor NullRefernceException gegooid werd. 
+
+\subsection{Depedency Injection}
+
+De kracht van het Isolated Worker model is dat er volledige controle is over het proces van de worker. Dit model komt ook standaard met \textit{Dependency Injection (DI)}. Dit houdt in dat de verantwoordelijkheid van de aanmaak en opkuis van bepaalde instanties van objecten geregeld worden door de applicatie. Dit kan bekomen worden door de objecten te registreren in de \textit{Program.cs} file. Zo is het verschil tussen de huidige en de nieuwe toepassing dat de initialisatie van de database niet meer manueel gebeurt via een connection string, maar via de DI. In de code heeft dit als gevolg dat de logica van het Strategy Pattern niet meer aangeroepen moet worden met een using-statement, omdat de instantie van de database automatisch opgekuist wordt nadat het proces gedaan is.
+
+\subsection{Containerisatie: DockerFile}
+%TODO: verder uitdiepen
+Beide testomgevingen moeten de code draaien in een container. Het is dus nodig om de code te laten builden naar een image die vervolgens gebruikt kan worden als blauwdruk. Deze image verzekert ook dat de code uitgevoerd wordt op dezelfde manier. Om de code op een container te laten draaien, is er nood aan een Dockerfile. Hierin wordt gedefinieerd wat er allemaal nodig is om de code op een correcte manier uit te voeren. Om de grootte van de image beperkt te houden, werd er gekozen om in de Dockerfile te werken met meerdere stages. Het beperken van de grootte heeft een positieve invloed op cold starts en is hierdoor heel belangrijk.
+
+\subsection{Platformonafhankelijke Messaging}
+
+Na het opzetten van de testomgevingen en het uitvoeren van de eerste testen, viel op dat de instanties van de container bij Azure Container Apps niet schaalden zoals gehoopt. Hierbij zijn meerdere pogingen gedaan om dit in orde te krijgen, waaronder: configuratie van de container aanpassen en host.json aanpassen in code. Na verder onderzoek bleek dat Azure Storage Queue niet ideaal was om dit te laten schalen zoals gewenst, omdat het een eigen manier van schalen hanteert. Hierna is besloten om dit te vervangen door Azure Service Bus, een dedicated message broker, die zorgt voor een agressievere schaling via KEDA. Om dit te bekomen in de code moest er een nuget package geïnstalleerd worden en moest de QueueTrigger aangepast worden naar een ServiceBusTrigger van de desbetreffende package. Dit gaf wel het gewenste effect. Vervolgens bij het testen van de omgeving in Google Cloud Run werd terug duidelijk dat het schalen niet verliep zoals gewenst. Dit komt omdat Google Cloud Run geen manier heeft om te kijken naar de Queue in Azure Service Bus om te bepalen of er bijgeschaald moet worden in tegenstelling zoals bij ACA met KEDA. Hierdoor werd er beslist Pub/Sub te gebruiken bij Google Cloud. Dit is de tegenhanger van Azure Service Bus in Azure en werkt op een gelijkaardige manier. Om dit te gebruiken werd in de code 3 zaken aangepast:
+
+\begin{description}
+    \item[Bericht in queue zetten:] Er werd een MessageHandler voorzien in de code die op basis van een environment variable beslist welke handler nodig is en zo het bericht in de juiste queue zet. Ook hier werd opnieuw het Strategy Pattern gebruikt. Welke instantie nodig is, wordt beslist bij de DI registratie in Program.cs. Deze handler instantie wordt beschikbaar gemaakt via de constructor en werd toegepast in de HttpTrigger.
+    \item[POST endpoint specifiek voor de Pub/Sub in Google Cloud:] In tegenstelling tot Azure Service Bus werkt Pub/Sub niet op basis van een wachtrij verwerking, waarbij een QueueTrigger aangeroepen wordt. Dit werkt enkel met POST endpoints om de uiteindelijke verwerking te kunnen uitvoeren. Daarom werd beslist om de code uit te breiden met een nodige POST endpoint die de genereerlogica uitvoert.  
+    \item[Abstractielaag genereerlogica:] Om dezelfde genereerlogica toe te passen voor de QueueTrigger en de POST endpoint voor Pub/Sub werd er een abstractielaag voorzien tussen de triggers en de verwerkingslogica. Dit werd in een DataProcessor object weggestoken die via DI ter beschikking gesteld wordt voor de triggers. Zo is er geen duplicatie van code nodig om exact hetzelfde proces uit te voeren in de verschillende providers.
+\end{description}
+
+\subsection{Optimalisatie Legacy Code}
+
+Bij de eerste testen kwam een probleem naar boven met de \textit{AzureHelper}. Dit is legacy code die alle functionaliteit voorziet voor de communicatie met Azure Blob Storage. Het probleem deed zich specifiek voor bij het verkrijgen van de \textit{WriterStream} om het resultaat weg te schrijven. Alvorens deze stream verkregen werd, werd er eerst een \textit{SetHttpHeaders} uitgevoerd via de Azure API om de header op de blob te zetten. Aangezien een parallel proces dit ondertussen ook deed, of naar ditzelfde bestand aan het wegschrijven was, veranderde de status tussen de \textit{header-call} en de \textit{write-call} met een HTTP-statuscode 412 als gevolg. De Azure SDK ziet dit als een onherstelbare fout, waardoor de verwerking stopte.
+\\ \\
+Om dit op te lossen werd de code aangepast zodat er geen aparte call meer nodig is voor het zetten van de header. Er is namelijk een manier om de headers direct mee te geven bij het wegschrijven van het bestand. Dit voorkomt dat er een tussenstatus ontstaat tussen de \textit{header-call} en de \textit{write-call}. Bij het wegschrijven van het bestand wordt nu ook een \textit{overwrite}-flag meegegeven die aan de Azure API aangeeft dat het bestand overschreven mag worden. Door bij de \textit{write-call} zowel het bestand weg te schrijven, de headers te zetten als aan te geven dat overschrijven is toegestaan in één enkele call, werd het probleem opgelost.
+\\ \\
+In de huidige toepassing in het probleemdomein vindt dit probleem vrijwel niet plaats, omdat de kans dat een dataset gelijktijdig gegenereerd wordt voor eenzelfde teelt in dezelfde omgeving heel klein is, dit komt in de praktijk bijna niet voor. Verder is dit ook een optimalisatie, aangezien het aantal API-calls is gereduceerd van twee naar één.
 
 \section{Opzet van de Testomgevingen}
 
-%\subsection*{Azure SQL Database}
+Dit onderdeel beschrijft de architectuur en inrichting van de experimentele infrastructuur voor dit onderzoek. Er wordt toegelicht welke middelen beschikbaar waren voor de inrichting van de omgevingen. Vervolgens wordt er gefocust op de componenten die gebruikt werden om de data te persisteren, de verzoeken in een wachtrij te zetten, de wijze waarop de image van de container gehost en gebuild werd. Ten slotte worden de omgevingen beschreven waar de containers op draaien. Dit geeft een duidelijk beeld over de architectuur en zal aantonen dat er bij elke keuze nagedacht is om de objectiviteit van het onderzoek te waarborgen.
+
+\subsection{Provisionering en Middelen}
+
+
+
+\subsection{Data- en Opslaglaag}
+
+\subsubsection*{Azure SQL Database}
+
+Een belangrijk onderdeel voor de testomgeving is een database om data persistent te maken over meerdere omgevingen en testruns heen. Aangezien de bestaande toepassing in het probleemdomein ook gebruik maakt van een Azure SQL Database, was het een logische keuze om dit ook voor dit onderzoek te gebruiken.
+\\
+\\
+
 
 %Free database gekozen die gebruik maakt van serverless vCore model. Dit betekent dat de db in pauze gaat na 1u. Bij de 1ste request kan het 10-30 sec duren alvorens deze terug opgestart is. Belangrijk dus om te kijken of we de database nog moeten aanpassen naar een DTU versie. Voor nu laten we het zo, omdat dit gratis is.
 
 %- stappenplan
 
-%\subsection*{Azure Blob Storage}
+\subsubsection*{Azure Blob Storage}
 
 %- Hot tier
 %- locally redundant storage
@@ -39,20 +152,32 @@ Dit hoofdstuk beschrijft de realisatie van de Proof-of-Concept (PoC). Er wordt g
 %- 3 containers aangemaakt
 %- stappenplan
 
-%\subsection*{Container Registry}
+\subsection{Messaging Infrastructuur}
+
+\subsubsection*{Azure Service Bus}
+
+
+
+\subsubsection*{Google Cloud Pub/Sub}
+
+
+
+\subsection{Container Beheer}
 
 %- waarom een centrale Container Registry gebruiken? => afstand voor Azure en Google beiden hetzelfde + portabiliteit
 %- waarom Github Container Registry? => gratis voor kleine projecten + Github Action om bij elke commit de container te builden
 %- stappenplan
 
-%\subsection*{Azure Container Apps}
+\subsection{Compute-omgevingen}
+
+\subsubsection*{Azure Container Apps}
 
 %- de optie ``optimaliseer voor azure functions'' wordt niet aangezet
 %- CI/CD => Github Action zet de nieuwe image klaar, dan nieuwe revision maken die dan de laatste versie van de image ophaalt van GHCR. Dit is een tussenstap zodat productie code niet automatisch aangepast wordt, maar gecontroleerd.
 
-%\subsection*{Google Cloud Run}
+\subsubsection*{Google Cloud Run}
 
-\section{Implementatie-uitdagingen en Mitigatiestrategieën}
+
 
 \section{Tooling en Automatisering}
 

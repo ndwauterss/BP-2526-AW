@@ -70,6 +70,7 @@ De tweede functie in dit proces, de Queue-trigger, bevat de effectieve logica di
 Elk type vereist een andere logica om de dataset te genereren. Dit komt voornamelijk doordat de bestandstypes van de brongegevens verschillen en op een andere manier opgehaald en verwerkt moeten worden. Na bespreking met de co-promotor is er beslist om voor het onderzoek enkel te focussen op \textbf{CSV} en \textbf{Shapefile} als brontype.  
 
 \begin{enumerate}
+    \label{pr:flow-generatie}
     \item \textbf{Initialisatie} \\
     Het systeem haalt alle relevante gegevens uit de database op. Dit omvat de specifieke teeltinformatie, de bronbestanden en de gedefinieerde datalagen die aan de dataset gekoppeld zijn. Het systeem zet ook de status van de dataset op \textit{Genereren} en reset de grenswaarden voor verdere berekeningen en kleurbepalingen. Vervolgens wordt er per teelt de masterfile opgehaald. Dit is de blauwdruk van de teelt en bevat alle GPS-locaties.
     \item \textbf{Inname Brongegevens} \\
