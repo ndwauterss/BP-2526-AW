@@ -10,12 +10,16 @@ De huidige toepassing is tweeledig. Enerzijds hebben we een HttpTrigger die de s
 \subsection{HttpTrigger} 
 
 De HttpTrigger is een Azure function die een POST endpoint ter beschikking stelt voor Agromanager. Dit kan aangeroepen worden vanuit Agromanager en ontvangt bepaalde gegevens die noodzakelijk zijn voor de opstart van het proces. Deze gegevens komen binnen via de Body van een HttpRequest object. De Body wordt vervolgens omgezet naar een string in JSON-formaat door middel van een StreamReader en in de volgende stap gedeserialiseerd naar een DatasetGeneratorRequest object. Dit object bevat volgende eigenschappen:
-\begin{itemize}
-    \item GpsDatasetID: \\ID van de dataset, nodig om op te halen welke teelten hieraan gekoppeld zijn en welke bestanden met meetdata hier bijhoren.
-    \item GpsDatasetSource: \\Een enum-waarde die later gebruikt zal worden om te bepalen welk type processor er nodig is bij het genereren. Bv.: Shapefile, CSV, etc.
-    \item AgroID: \\ID van de Agromanager-omgeving. Dit wordt gebruikt om te bepalen welke database er nodig is voor het ophalen en wegschrijven van data.
-    \item CompanyName: \\Bedrijfsnaam van de omgeving. Dit heeft dezelfde functie als een AgroID.
-\end{itemize}
+\begin{description}
+    \item [GpsDatasetID:] 
+    ID van de dataset, nodig om op te halen welke teelten hieraan gekoppeld zijn en welke bestanden met meetdata hier bijhoren.
+    \item[GpsDatasetSource:] 
+    Een enum-waarde die later gebruikt zal worden om te bepalen welk type processor er nodig is bij het genereren. Bv.: Shapefile, CSV, etc.
+    \item[AgroID:] 
+    ID van de Agromanager-omgeving. Dit wordt gebruikt om te bepalen welke database er nodig is voor het ophalen en wegschrijven van data.
+    \item[CompanyName:] 
+    Bedrijfsnaam van de omgeving. Dit heeft dezelfde functie als een AgroID.
+\end{description}
 
 Het verkregen object wordt in de volgende stap naar een Azure Storage Queue gestuurd, waar het in een wachtrij terecht komt om verwerkt te worden. Tot slot wordt een OkObjectResult teruggeven naar de aanvrager wat resulteert in een Status 200 OK.
 
@@ -40,6 +44,7 @@ De code bevat diepe geneste foreach-lussen die zorgen voor een verwerkingscomple
 \begin{equation}
     O(T \cdot B \cdot L \cdot P) \approx O(n^4)
 \end{equation}
+\label{frm:iteraties}
 waarbij:
 \begin{itemize}
     \item $T$ = Aantal Teelten: loopt door alle teelten gelinkt aan de dataset.
@@ -106,6 +111,7 @@ De kracht van het Isolated Worker model is dat er volledige controle is over het
 Beide testomgevingen moeten de code draaien in een container. Het is dus nodig om de code te laten builden naar een image die vervolgens gebruikt kan worden als blauwdruk. Deze image verzekert ook dat de code uitgevoerd wordt op dezelfde manier. Om de code op een container te laten draaien, is er nood aan een Dockerfile. Hierin wordt gedefinieerd wat er allemaal nodig is om de code op een correcte manier uit te voeren. Om de grootte van de image beperkt te houden, werd er gekozen om in de Dockerfile te werken met meerdere stages. Het beperken van de grootte heeft een positieve invloed op cold starts en is hierdoor heel belangrijk.
 
 \subsection{Platformonafhankelijke Messaging}
+\label{ch:messaging-queue}
 
 Na het opzetten van de testomgevingen en het uitvoeren van de eerste testen, viel op dat de instanties van de container bij Azure Container Apps niet schaalden zoals gehoopt. Hierbij zijn meerdere pogingen gedaan om dit in orde te krijgen, waaronder: configuratie van de container aanpassen en host.json aanpassen in code. Na verder onderzoek bleek dat Azure Storage Queue niet ideaal was om dit te laten schalen zoals gewenst, omdat het een eigen manier van schalen hanteert. Hierna is besloten om dit te vervangen door Azure Service Bus, een dedicated message broker, die zorgt voor een agressievere schaling via KEDA. Om dit te bekomen in de code moest er een nuget package geïnstalleerd worden en moest de QueueTrigger aangepast worden naar een ServiceBusTrigger van de desbetreffende package. Dit gaf wel het gewenste effect. Vervolgens bij het testen van de omgeving in Google Cloud Run werd terug duidelijk dat het schalen niet verliep zoals gewenst. Dit komt omdat Google Cloud Run geen manier heeft om te kijken naar de Queue in Azure Service Bus om te bepalen of er bijgeschaald moet worden in tegenstelling zoals bij ACA met KEDA. Hierdoor werd er beslist Pub/Sub te gebruiken bij Google Cloud. Dit is de tegenhanger van Azure Service Bus in Azure en werkt op een gelijkaardige manier. Om dit te gebruiken werd in de code 3 zaken aangepast:
 
@@ -125,68 +131,316 @@ In de huidige toepassing in het probleemdomein vindt dit probleem vrijwel niet p
 
 \section{Opzet van de Testomgevingen}
 
-Dit onderdeel beschrijft de architectuur en inrichting van de experimentele infrastructuur voor dit onderzoek. Er wordt toegelicht welke middelen beschikbaar waren voor de inrichting van de omgevingen. Vervolgens wordt er gefocust op de componenten die gebruikt werden om de data te persisteren, de verzoeken in een wachtrij te zetten, de wijze waarop de image van de container gehost en gebuild werd. Ten slotte worden de omgevingen beschreven waar de containers op draaien. Dit geeft een duidelijk beeld over de architectuur en zal aantonen dat er bij elke keuze nagedacht is om de objectiviteit van het onderzoek te waarborgen.
+Dit onderdeel beschrijft de architectuur en inrichting van de experimentele infrastructuur voor dit onderzoek. Er wordt toegelicht welke middelen beschikbaar waren voor de inrichting van de omgevingen. Vervolgens wordt er gefocust op de componenten die gebruikt werden om de data te persisteren, de verzoeken in een wachtrij te zetten, de wijze waarop de image van de container gehost en gebuild werd. Ten slotte worden de omgevingen beschreven waar de containers op draaien. Dit geeft een duidelijk beeld over de architectuur en zal aantonen dat er bij elke keuze nagedacht is om de objectiviteit van het onderzoek te waarborgen. De keuze van bepaalde componenten werd beïnvloed door het feit dat Agromanager zich bevindt in het ecosysteem van Azure. Hierdoor werd getracht om zoveel mogelijk componenten die de huidige toepassing gebruikt, ook te gebruiken binnen het experiment. Dit zorgt ervoor dat dit onderzoek een realistisch resultaat geeft, aangezien bedrijven niet zo snel geneigd zijn om alle componenten van hun toepassing te migreren naar een andere provider. Op deze manier kan het bedrijf een voorzichtige migratie, indien zij het alternatieve platform als succesvol aanschouwen.
 
 \subsection{Provisionering en Middelen}
 
-
+Het onderzoek is gespreid over 2 cloudomgevingen, waardoor het nodig was om een account te hebben op beide patformen. Voor de Azure-infrastructuur werd er een subscription door Agromanager ter beschikking gesteld specifiek voor dit experiment. Hierdoor was er toegang tot de benodigde quota. Er werd een budget afgesproken van €50, waarbij getracht werd om binnen deze limiet te blijven.
+\\
+\\
+In Google Cloud werd een individuele \textit{free-tier}-omgeving opgezet die een budget van €260 voor 90 dagen ter beschikking stelde. Hoewel de beschikbare middelen binnen een dergelijke omgeving beperkter zijn dan in een zakelijk subscription, is dit gecompenseerd door de technische aspecten (bv. CPU, geheugen, ...) van de container gelijk te trekken met de configuratie in Azure. Dit waarborgt dat de financiële achtergrond van de accounts geen invloed hebben op de prestaties tijdens de uitvoering van de benchmarks.
 
 \subsection{Data- en Opslaglaag}
 
 \subsubsection*{Azure SQL Database}
 
 Een belangrijk onderdeel voor de testomgeving is een database om data persistent te maken over meerdere omgevingen en testruns heen. Aangezien de bestaande toepassing in het probleemdomein ook gebruik maakt van een Azure SQL Database, was het een logische keuze om dit ook voor dit onderzoek te gebruiken.
-\\
-\\
 
-
-%Free database gekozen die gebruik maakt van serverless vCore model. Dit betekent dat de db in pauze gaat na 1u. Bij de 1ste request kan het 10-30 sec duren alvorens deze terug opgestart is. Belangrijk dus om te kijken of we de database nog moeten aanpassen naar een DTU versie. Voor nu laten we het zo, omdat dit gratis is.
-
-%- stappenplan
+\begin{description}
+    \item[Provisionering en Resource Group:] 
+    Er werd een nieuwe resource group aangemaakt binnen de subscription van Azure die geberuikt werd voor alle resources binnen Azure. De database werd ook toegewezen aan deze resource group. Als regio werd er gekozen voor \textit{West Europe}, omdat dit geografisch het dichtste aansluit met Agromanager. Dit voorkomt netwerkvertragingen.
+    \item[Database Tier:]
+    Er werd gekozen voor een textit{free database offer} binnen Azure. Dit houdt in dat de eerste 100.000 vCore seconden en 32GB geheugen gratis zijn per maand. Verder werd gekozen om tegen vergoeding de database verder te gebruiken, indien de limiet van de gratis aanbieding bereikt is. Dit waarborgt dat de database beschikbaar blijft. Deze aanbieding was enkel geldig voor een serverless model die gebruik maakt van vCores. Dit heeft als nadeel dat de database inactief wordt na 1 uur van inactiviteit wat voor een cold start zorgt. Deze cold start kan omzeild worden en zal later aangekaart worden. Verder werd er gekozen voor een maximum van 2 vCores en een minimum van 0.5 vCores wat resulteert in een minimum werkgeheugen van 2.05 GB en een maximum verwerkingsgeheugen van 6GB. De maximale opslag van de gegevens werd op 1GB gezet, omdat dit ruim voldoende is voor de data die aanwezig zal zijn in de database. Anderzijds drukt het ook de kosten, indien de gratis limiet is overschreden. Tot slot werd de database niet aangeduid als \textit{zone redundant} en wel als \textit{Locally-redundant backup storage}.
+    \item[Authenticatie:]
+    Er werd gekozen om de authenticatie van de database via SQL Server Authentication (gebruikersnaam en wachtwoord) te regelen. Dit was voornamelijk noodzakelijk voor Google Cloud Run, omdat dit niet zo eenvoudig overweg kan met Azure AD Managed Identities. Ook is het makkelijker om via een universele connection string de database connectie te regelen via een Environment Variable voor beide omgevingen. 
+    \item[Beveiliging:]
+    Om de database via Microsoft SQL Server Management Studio te kunnen raadplegen, was het nodig om het IP-adres van de client (laptop) toe te voegen aan de firewall-regels van SQL Server waarop de database draait. De firewall werd ook zo geconfigureerd dat Azure sevices toegang kregen, zonder expliciete regels te moeten definiëren. Voor Google Cloud Run moest er wel een work-around voorzien worden, omdat dit geen vast IP-adres toegewezen krijgt. Alvorens de testruns voor Google Cloud Run uit te voeren, werd eerst een extra firewall-regel toegevoegd die de deur volledig openzet. Zo werd de start IPv4 adres op 0.0.0.0 gezet en de eind IPv4 adres op 255.255.255.255. Nadat de tests waren uitgevoerd, werd deze regel meteen terug verwijderd. Dit werd op deze manier geregeld, omdat dit niet binnen de afgebakende scope van dit onderzoek lag. 
+    \item[Schema en Databasetabellen:]
+    In de code werd er gebruikgemaakt van Entity Framework. De databasetabellen werden gedefinieerd via een code-first approach. Dit betekent dat de eigenschappen van de tabellen via de code gezet werden. Voor deze entiteiten werden er configuration-klassen voorzien om verdere instellingen specifiek voor de tabel in te stellen. Vervolgens werd er een migration-bestand aangemaakt die de schema en tabellen van de database kan toepassen op een database. Bij elke aanpassing aan de database entiteiten in de code, werd er een nieuwe migration-bestand aangemaakt en opnieuw toegepast op de database, zodat dit up-to-date was.
+\end{description}
 
 \subsubsection*{Azure Blob Storage}
 
-%- Hot tier
-%- locally redundant storage
-%- standard
-%- 3 containers aangemaakt
-%- stappenplan
+Voor het experiment is er nood aan een Blob Storage om de bronbestanden met meetdata, de masterfiles van de teelten met boompunten en het uiteindelijke resultaat in op te slaan. Dit dient als een centrale opslagplaats die bereikbaar is voor beide omgevingen. Net zoals bij de database werd er gekeken naar wat er gebruikt wordt bij de huidige toepassing in het probleemdomein. Hieruit kwam Azure Blob Storage als oplossing naar boven.  
+\\
+\\
+Aangezien dit in Azure ligt, werd een nieuwe \textit{Storage Account} ingericht en toegevoegd aan de bestaande resource group in de subscription van Agromanager. Welke configuratiestappen er genomen werden, wordt in het volgende onderdeel besproken:
+
+\begin{description}
+    \item[Accounttype en redundantie:]
+     Er is gekozen voor \textit{StorageV2 (general purpose v2)} als type, omdat dit de standaard is. Om de kosten te drukken, werd de redundantie ingesteld op \textit{Locally-redundant storage (LRS)}.
+     \item[Regio:]
+     Net als bij de database werd dit ingesteld op \textit{West Europe}. Wederom om netwerkvertragingen te beperken voor de container in Azure en om een stabiel referentiepunt te bieden voor Google Cloud Run.
+     \item[Containers:]
+     Er zijn 3 opslagcontainers manueel aangemaakt in Azure Portal. 1 voor de masterfiles van de teelten, 1 voor de bronbestanden met meetdata (CSV, Shapefile) en 1 voor het wegschrijven van de resultaten.
+     \item[Access Tier:]
+     Voor de data in de containers werd gekozen voor \textit{Hot Tier} als \textit{Access Tier}. Dit maakt dat de bestanden geoptimaliseerd zijn om continu geraadpleegd te worden. Dit is noodzakelijk in een testrun die 30 keer uitgevoerd wordt en waarbij de data-ophalingen verweven zitten in geneste lussen. Het zorgt enerzijds voor een hogere opslagkost, maar anderzijds voor een lagere kost per transactie wat bij de benchmarks een kenmerk is.
+     \item[Toegangsbeheer:]
+     De toegangsbeheer van de containers is ingesteld op \textit{private} en kan enkel geraadpleegd worden via een \textit{Account Access Key}. Deze key wordt in de code gebruikt via de \textit{AzureHelper}. Dit kon voor beide omgevingen makkelijk geregeld worden door een \textit{connection string} naar de Storage toe te voegen in de \textit{Environment Variables}.
+\end{description}
 
 \subsection{Messaging Infrastructuur}
 
+De dataset wordt asynchroon verwerkt, omdat de gebruiker dan meteen een indicatie krijgt dat de achtergrondverwerking gestart is en hier niet minutenlang op moet wachten. In de huidige toepassing gebeurt dit via Azure Storage Queue die in de code een QueueTrigger aanroept. Deze trigger voert de effectieve logica uit om een dataset te genereren. Eerder (\ref{ch:messaging-queue}) werd aangekaart dat bij het testen naar boven kwam dat de schaling via Azure Storage Queue niet werkte zoals het vereist was voor Azure Container Apps. Anderzijds gebeurde de schaling in Google Cloud Run ook niet naar behoren, omdat het standaard geen native ondersteuning biedt voor het schalen op basis van de lengte van een wachtrij. Er diende voor beide omgevingen een alternatieve oplossing gevonden te worden. Bijgevolg zijn Azure Service Bus en Google Cloud Pub/Sub Push ingezet om de orchestratie van de berichtenwachtrij te faciliteren en de bijhorende automatische schaling aan te sturen. Hoe deze toepassingen opgezet zijn, wordt verder in dit hoofdstuk besproken.
+
 \subsubsection*{Azure Service Bus}
 
+Deze message broker werd gebruikt voor Azure Container Apps en werd op de volgende manier geconfigureerd:
 
+\begin{description}
+    \item[Resource Group en Regio:]
+    Idem zoals bij andere resources in Azure werd dit toegevoegd aan de resource group die aangemaakt werd in de subscription van Agromanager, alsook werd de regio hier op \textit{West Europe} gezet.
+    \item[Pricing Tier:]
+    De standaard \textit{pricing tier} werd gekozen. 
+    \item[Queue:] 
+    Er werd slechts 1 queue aangemaakt voor Azure Container Apps. Google Cloud Run hanteert een andere manier. Bij de aanmaak werd een toepasselijke naam gekozen. De max queue size werd op 1GB gelaten. Max delivery count werd op 5 gezet en de lock duration op 5 minuten. Deze lock kan bij langere processen issues geven, indien de verwerking langer dan 5 minuten duurt. In de benchmarks werden hier echter geen problemen bij ondervonden. Andere instellingen werden op de standaard gehouden.
+    \item[Toegangsbeheer:] 
+    Om toegang te krijgen tot deze queue moet er gebruik gemaakt worden van een \textit{Shared Access Key}. Hierdoor kan de \textit{connection string} toegevoegd worden in de \textit{Environment Variables} van Azure Container Apps.
+\end{description}
 
 \subsubsection*{Google Cloud Pub/Sub}
 
+Om de asynchrone verwerking op een schaalbare manier uit te voeren in Google Cloud Run werd een Pub/Sub-architectuur gebruikt. Dit kan aanschouwd worden als de tegenhanger van Azure Service Bus en werd op de volgende manier ingesteld:
 
+\begin{description}
+    \item[Topic en Subscription:] 
+    Er is een \textit{topic} aangemaakt onder de naam \texttt{dataset-generator-topic} die enkel de defaultwaardes aan heeft staan. Hieraan is een \textit{subscription} gekoppeld van het type \textit{push}. Deze \textit{subscription} bevat naast een naam, ook een POST endpoint. Deze endpoint bestaat uit de Google Cloud Run endpoint, aangevuld met de toegevoegde POST endpoint van in de code (\textit{/api/GenerateDatasetPubSub}).
+    \item[Timeout en Acknowledgement:] 
+    Heel cruciaal binnen deze configuratie is de \textit{Acknowledgement Deadline}-instelling. Dit werd verhoogd naar 600 seconden (10 minuten). Aangezien de verwerking 4 tot 6 minuten actief is, voorkomt deze ruime marge dat Google Cloud het bericht als "niet afgeleverd" beschouwt en voortijdig opnieuw aanbiedt (redelivery). Dit zorgt anders voor corrupte benchmarkmetingen.
+    \item[IAM en Rechtenbeheer:] 
+    Voor de beveiligde communicatie tussen de Google Cloud services is de \textit{Default Compute Service Account} geautoriseerd met de rol van \textit{Pub/Sub Publisher}. Hiermee krijgt de runtime-omgeving de nodige rechten om de status van berichten te beheren. In de instellingen moet je dan wel aanduiden dat de beveiliging via IAM gebeurd.
+\end{description}
 
 \subsection{Container Beheer}
 
-%- waarom een centrale Container Registry gebruiken? => afstand voor Azure en Google beiden hetzelfde + portabiliteit
-%- waarom Github Container Registry? => gratis voor kleine projecten + Github Action om bij elke commit de container te builden
-%- stappenplan
+Voor de Container Registry werd er gekozen voor een centrale manier in plaats van een registry op één van de platformen. Dit houdt de afstand tussen de image en beide platformen hetzelfde. Dit waarborgt dat de cold start die veroorzaakt wordt bij het opnieuw initialiseren van de container en waarbij de image opnieuw gepulled wordt van de registry niet positief beïnvloedt wordt voor één van de omgevingen. 
+\\
+\\
+Als centrale Container Registry werd er gekozen voor Github Container Registry (GHCR).
+
+\begin{description}
+    \item[Version Control:] De versies van de applicatiecode werden beheerd in Github.
+    \item[CI/CD:] Door middel van Github Actions werd een CI/CD-pipeline opgezet. Het bijhorende YAML-bestand werd toegevoegd aan het project en automatiseert het bouw-proces van de Docker-image bij elke push naar de master-branch. Vervolgens wordt deze versie van de image gepushed naar GHCR. In het portaal van Github kan er gecontroleerd worden wat het resultaat was van de build-processen. Hier kan ingegrepen worden bij een onsuccesvolle build. Ook worden er meldingen via mail verstuurd bij fouten.
+    \item[Kosten:] GHCR is gratis voor kleine projecten en dit was dus een ideale manier om de vaste kosten te drukken.
+\end{description}
+
+Om de integriteit van de applicatie te waarborgen, is de GitHub Container Registry geconfigureerd als een private repository. De toegang voor ACA en GCR is geregeld door middel van een Personal Access Token (PAT) met \textit{read-only} rechten. Deze token werd als \textit{secret} opgeslagen binnen de respectievelijke platformen, waardoor de beveiliging gewaarborgd blijft zonder de image publiekelijk bloot te stellen. Om een PAT te bemachtigen in Github moeten de volgende stappen doorlopen worden:
+
+\begin{itemize}
+    \label{howto:pat-github}
+    \item Ga naar \textit{Settings} in Github en scroll helemaal tot beneden in de navigatie.
+    \item Klik op \textit{Developer Settings}.
+    \item Er komt een navigatie-item zichtbaar voor \textit{personal access tokens}, waarbij er de mogelijkheid is om \textit{Tokens (classic)} aan te duiden. Klik hierop.
+    \item In het scherm komt rechts bovenaan een knop te voorschijn om een token te genereren. Wanneer hier op geklikt wordt, komt de mogelijheid zichtbaar om een classic token te genereren.
+    \item Nu komt er een lijst van selecteerbare items in het scherm. Hier is het belangrijk om \textit{repo} en \textit{read:packages} aan te duiden.
+    \item Klik op generen.
+    \item PAT is nu zichtbaar en moet gekopieerd en geplakt worden naar een secret in de testomgeving.
+\end{itemize}
+
+\subsection{Definitie van de Testdata}
+
+Dit onderdeel beschrijft hoe de testdata tot stand kwam en geeft in detail weer waaruit deze data bestaat. 
+
+\begin{description}
+    \item[Teelten:] 
+    Er werden 7 teelten aangemaakt op 1 perceel. De locatie van deze cultivaties zijn willekeurig gekozen. 
+    \item[Teeltrijen:] 
+    Voor elke teelt werden de teeltrijen geometrisch gedefinieerd. Deze actie genereert een masterfile voor elke teelt en bevat alle boompunten met hun respectievelijke locatie.
+    \item[Bronbestanden met meetdata:] 
+    De ingetekende teelten werden geëxporteerd naar een Shapefile. Deze Shapfiles werden vervolgens geïmporteerd in QGIS. In deze tool werden de boomvlakken omgezet naar boompunten. Daarna werden er willekeurige waardes toegevoegd aan deze boompunten die de meetdata moeten voorstellen. Tot slot werd het bestand opgeslagen als Shapefile en als CSV.
+    \item[GpsDatasets:] 
+    Er werden 2 datasets aangemaakt. Eén voor een Shapefile-variant en een andere als CSV-variant. Voor elke set werden dezelfde waarden aangeduid in het aanmaakscherm. Enkel het type verschilt. Tot slot werden er bij de dataset voor Shapefile 7 verschillende Shapefile-bestanden toegevoegd. Dit werd ook gedaan voor de CSV-dataset, maar dan met CSV-bestanden. Elk bestand staat voor een specifieke teelt.
+    \item[Verwerking:] 
+    Dit resulteert erin dat er een iteratie gebeurt per teelt. Per teelt wordt er geloopt over alle bestanden die toegevoegd zijn. Stel dat elke teelt 3000 boompunten gemiddeld heeft. Dit wil zeggen dat de bronbestanden ook data bevat voor gemiddeld 3000 boompunten. Als we nu de formule (\ref{frm:iteraties}) toepassen:
+    \begin{equation}
+        7 * 7 * 3000 * 3000 = 441.000.000
+    \end{equation}
+    In dit geval wordt er in de code voor 1 testrun 441.000.000 iteraties gedaan.
+\end{description}
+
+Het bekomen van deze dataset werd op een iteratieve manier gedaan. Zo werd er per toevoeging van een teelt en het respectievelijke bronbestand gekeken welke impact dit had op verwerkingstijd van de huidige toepassing in het probleemdomein. Hierbij werd bij het uiteindelijk resultaat gefocust op een verwerkingstijd tussen 4 en 6 minuten. Deze tijdspanne fungeert als \textit{baseline} voor het onderzoek.
 
 \subsection{Compute-omgevingen}
 
+\begin{table}[h]
+    \centering
+    \caption{Gedetailleerde vergelijking van de cloudomgevingen}
+    \label{tab:compute-specs}
+    \begin{tabular}{|l|l|l|}
+        \hline
+        \textbf{Eigenschap}        & \textbf{Azure Container Apps (ACA)} & \textbf{Google Cloud Run (GCR)} \\ \hline
+        vCPU                       & 1.0                                 & 1                               \\ \hline
+        Geheugen (RAM)             & 2.0 GiB                             & 2 GiB                           \\ \hline
+        Regio                      & West Europe                         & europe-west1 (Belgium)          \\ \hline
+        Billing Model              & Consumption                         & Instance-based                  \\ \hline
+        Min / Max Replicas         & 0 / 30                              & 0 / 15                          \\ \hline
+        Cooldown Period            & 60 seconden                         & N.v.t.                          \\ \hline
+        Polling Interval           & 10 seconden                         & N.v.t.                          \\ \hline  
+        Scaling Trigger            & Azure Service Bus + KEDA (Wachtrij) & Cloud Pub/Sub (HTTP Push)       \\ \hline
+        Execution Environment      & .NET Stack                          & Second Generation               \\ \hline
+        Request Timeout            & 300 seconden                        & 600 seconden                    \\ \hline
+        Ingress                    & Poort 80                            & Poort 8080                      \\ \hline
+    \end{tabular}
+\end{table}
+
 \subsubsection*{Azure Container Apps}
 
-%- de optie ``optimaliseer voor azure functions'' wordt niet aangezet
-%- CI/CD => Github Action zet de nieuwe image klaar, dan nieuwe revision maken die dan de laatste versie van de image ophaalt van GHCR. Dit is een tussenstap zodat productie code niet automatisch aangepast wordt, maar gecontroleerd.
+Bij de opzet van de omgeving in Azure Container Apps werden de volgende stappen doorlopen:
+
+\begin{description}
+    \item[Subscription, Resource Group en Regio:] 
+    Er werd gekozen voor de subscription die door Agromanager beschikbaar gesteld is voor dit experiment. Als resource group werd dezelfde group gekozen als de database, Azure Blob Storage en Azure Service Bus. Net als die andere resources werd ook hier gekozen voor West Europe als regio.
+    \item[Name:] 
+    Uiteraard heeft een container app een naam nodig. In dit geval werd er gekozen voor \textit{ca-datasetgenerator-1}.
+    \item[Optimize for Azure Functions:] 
+    De afspraak was om geen platformafhankelijke boost mechanismes te gebruiken. We vergelijken beiden platformen op een zo neutraal mogelijke manier. Daarom werd \textit{Optimize for Azure Functions} niet aangevinkt.
+    \item[Container Apps Environment:] 
+    Er werd een nieuwe \textit{Container Apps Environment} aangemaakt, aangezien er nog geen bestond.
+    \item[Deployment Source:] 
+    Hier werd gekozen voor \textit{Container image}, aangezien er met een Dockerfile gewerkt wordt.
+    \item[Image Source:] 
+    De testomgeving haalt de image van GHCR als Container Registry. Daarom moet er hier gekozen worden voor \textit{Docker Hub or other registries}.
+    \item[Image Type:] 
+    De image wordt gehaald uit een private repository. Hier moet bijgevolg \textit{private} geselecteerd worden.
+    \item[Registry Login Server:] 
+    Hier werd \textit{ghcr.io} ingevuld, als verwijzing naar Github Container Registry.
+    \item[Authentication:] 
+    Als authenticatie type werd \textit{Secret-based} aangeduid. Daarna werd de \textit{registry user name} ingevuld. Dit is de gebruikersnaam van de gebruiker in Github die eigenaar is van de container registry. Tot slot werd ook de \textit{registry password} ingevuld. Dit werd bekomen door een \textit{personal access token} aan te maken in Github (\ref{howto:pat-github}) en dit hier te selecteren.
+    \item[Image and Tag:] 
+    Dit is een link naar de image en bestaat uit de volgende componenten: \textit{ghcr.io} + / + \textit{gebruikersnaam in Github} + / + \textit{image naam} + : + \textit{image tag}. Bij de \textit{image tag} kan je \textit{latest} invullen om steeds de nieuwste versie van de image te nemen of je kan ook een \textit{digest} vermelden hier, zodat je een specifieke versie van de image neemt.
+    \item[Development Stack:] 
+    De applicatie is in .NET, dus werd hier gekozen voor .NET.
+    \item[Workload Profile:] 
+    Er werd gekozen voor \textit{Consumption - Up to 4vCPU, 8 Gib memory}.
+    \item[GPU:] 
+    Dit werd niet aangevinkt!
+    \item[CPU and Memory:] 
+    \textit{1 CPU cores, 2 Gi memory}.
+    \item[Ingress:]
+    \textit{Ingress} werd aangevinkt. Vervolgens werd ook \textit{Accepting traffic from anywhere} geselecteerd. De \textit{target port} werd op 80 gezet.
+    \item[Secrets:] 
+    In de volgende stap werden de secrets voor gevoelige data aangemaakt. Dit omvat een secret voor:
+    \begin{itemize}
+        \item Azure Service Bus
+        \item SQL Database
+        \item Azure Blob Storage
+        \item Applications Insight
+    \end{itemize} 
+    \item[Environment Variables:] 
+    Tot slot werden de omgevingsvariabelen ingesteld. De volgende variabelen zijn nodig om de benchmarks te kunnen uitvoeren: 
+    \begin{itemize}
+        \item SqlConnectionString
+        \item AzureWebJobsStorage
+        \item AzureStorageAccount
+        \item QueueName
+        \item APPLICATIONINSIGHTS\_CONNECTION\_STRING
+        \item AzureServiceBusConnectionString
+        \item CLOUD\_PROVIDER
+    \end{itemize}
+\end{description}
+
+Nadat de container app aangemaakt is, werden er nog bepaalde schaalregels aangepast en toegevoegd. Zo werd de \textit{Cooldown period} aangepast naar 60 seconden, zodat de revision inactief wordt na 1 minuut. Ook \textit{polling interval} werd op 10 seconden gezet. Dit houdt in dat de \textit{event source} om de 10 seconden gecontroleerd wordt op nieuwe gebeurtenissen. In dit experiment is de \textit{event source} Azure Service Bus. Uiteindelijk werd er ook een nieuwe schaalregel toegevoegd voor Azure Service Bus in \textit{KEDA}. Hierbij werd gekozen om de \textit{custom preset} als type te kiezen. Dit gaf de mogelijkheid om zelf schaalparameters te definiëren:
+ 
+\begin{description}
+    \item[messageCount:] 1 (Dit zorgt ervoor dat er per bericht in Azure Service Bus er 1 instantie opgestart wordt die dit bericht verwerkt).
+    \item[namespace:] dataset-generator 
+    \item[queueName:] generatedatasetqueue-aca
+\end{description}
+ 
+Voor de authenticatie werd de secret voor Azure Service Bus ingesteld als \textit{connection}.
+\\
+\\
+Er moet ook nog benadrukt worden dat de huidige \textit{revision} niet automatisch de laaste versie van de image draait. Wanneer er een aanpassing aan de code is gebeurd en Github Actions heeft de image opnieuw gebuild en gepushed aar GHCR, dan moet er nog altijd een nieuwe revision opgestart worden. Dit voorkomt dat een applicatie op productie meteen aangepast zou worden, wat tot fouten of ongewenste effecten kan zorgen. Op deze manier wordt een gecontroleerde update van de applicatie gewaarborgd.
+\\ 
+\\
+Tijdens het aanpassen van de applicatiecode en het opzetten van een nieuwe revision, viel op dat Azure Container Apps soms niet doorheeft dat er een nieuwe versie van de image is. Dit doet vermoeden dat er caching gebruikt wordt. Om dit te omzeilen, werd er een \textit{environment variable} gedefinieerd, die een versienummer voorstelt. Door dit aan te passen bij elke nieuwe revision, haalt Azure Container Apps wel de laatste versie van de image op.
 
 \subsubsection*{Google Cloud Run}
 
+Alvorens de omgeving in Google Cloud Run opgezet kon worden, was er nood aan een Artifact Registry Repository in Google Cloud. De noodzaak hiervoor kwam door het feit dat Google Cloud enkel images herkent in hun eigen omgeving. Deze repository werkt als een proxy die de image uit GHCR gaat ophalen. Om de image uit te kunnen uitlezen, moet er net zoals bij Azure Container Apps eerst een \textit{Personal Access Token} aangemaakt worden in Github (\ref{howto:pat-github}). In het volgende gedeelte wordt vermeld hoe de instellingen ingesteld moeten worden bij de aanmaak van een Artifact Registry Repository:
 
+\begin{description}
+    \item[Name:]
+    \textit{github-proxy}
+    \item[Format:] 
+    \textit{Docker}
+    \item[Mode:] 
+    \textit{Remote}
+    \item[Remote Repository Source:] 
+    \textit{Custom} met als invulwaarde bij \textit{Custom repository: https://ghcr.io}
+    \item[Remote Repository Authentication Mode:] 
+    \textit{Authenticated} met als invulwaarde bij \textit{Username for the upstream repository: **gebruikersnaam Github**} en als selecteerbare waarde bij \textit{Secret: PAT uit Github}. \textit{Use latest version} werd ook aangevinkt.
+\end{description}
 
-\section{Tooling en Automatisering}
+De proxy om de image op te halen uit GHCR is aangemaakt en bijgevolg kan de container opgezet worden in Google Cloud Run. De configuratie hiervoor wordt vervolgens besproken:
 
-\section{Uitvoeringsprotocol}
+\begin{description}
+    \item[Container Image URL:] 
+    Hier werd de URL van de Artifact Registry Repository die in de vorige stap aangemaakt werd, ingevuld.
+    \item[Naam en Regio:] 
+    Als naam werd \textit{dataset-generator} ingevuld. Voor de regio werd \textit{europe west1 (Belgium)} geselecteerd en is gelijkaardig aan de regio die gekozen werd bij ACA. Hierdoor is netwerkvertraging evenredig, wat de neutraliteit bevordert. 
+    \item[Authenticatie:] 
+    De applicatie is publiekelijke beschikbaar, doordat \textit{Allow public access} aangeduid werd. Dit was de meest pragmatische keuze voor een tijdelijk testomgeving. De endpoint moet geactiveerd kunnen worden via een script en een strikte beveiliging zou de benchmarking bemoeilijken. Dit is natuurlijk niet aangeraden in een productie-omgeving.
+    \item[Billing:] 
+    Oorspronkelijk werd er gekozen voor \textit{Request-based}. Na de eerste testruns werd duidelijk dat er meer nood was aan \textit{Instance-based}, omdat de request in de toepassing niet zo lang duurt. Dit gaf een langere verwerkingstijd, doordat de CPU vermindert werd nadat de request verwerkt was door het in een wachtrij te plaatsen. 
+    \item[Schalen:] 
+    Net zoals bij ACA is er nood aan automatische schaling. Daarom werd \textit{Auto scaling} geselecteerd. Bij \textit{minimum instances} werd 0 ingevuld, zodat \textit{scale-to-zero} mogelijk is. Bij \textit{maximum instances} werd geprobeerd om, net zoals bij ACA, 30 instanties te zetten. Dit was echter niet mogelijk door de quota die verbonden was aan het gratis account. Hierop moet dus geanticipeerd worden bij het uitvoeren van 30 testruns.
+    \item[Ingress:] 
+    Net zoals bij authenticatie werd hier gekozen om de service beschikbaar te maken voor iedereen op het internet en ook voor dezelfde reden.
+    \item[Container Poort:] 
+    Dit werd ingesteld op 8080. 
+    \item[Resources:] 
+    Deze waarden werden gelijkgesteld aan de waarden in ACA. Zo werd voor \textit{memory} 2 GiB gekozen en voor \textit{CPU} 1. Dit waarborgt dat beide omgevingen met dezelfde middelen werken om de dataset te genereren.
+    \item[Requests:] 
+    \textit{Request timeout} werd oorspronkelijk op 300 seconden gezet. Aangezien de verwerkingslogica via Pub/Sub en een POST request afgehandeld wordt, was het noodzakelijk om dit naar 600 seconden te zetten. Dit zorgt voor een veiligere marge bij verwerkingstijden die tussen 4 en 6 minuten liggen. Om te waarborgen dat 1 instantie van de container slechts 1 request van Pub/Sub verwerkt, moest de instelling \textit{Maximum concurrent requests per instance} op 1 gezet worden.
+    \item[Execution Environment:] 
+    \textit{Second generation}. Voornamelijk gekozen voor de Linux-ondersteuning.
+    \item[Revision Scaling:] 
+    Net zoals bij \textit{schalen} werd de min op 0 gezet en de max op 15.
+    \item[Platformafhankelijke Boost:] 
+    Zoals eerder vermeld bij ACA werd er afgesproken om geen boosts te activeren die enkel beschikbaar zijn in deze testomgeving. Bijgevolg werd dit niet aangevinkt.
+    \item[Secrets:] 
+    De container werd op dit aangemaakt, maar ontbreekt nog secrets die gebruikt kunnen worden bij de \textit{environment variables}. Er zijn secrets nodig voor de volgende zaken:
+    \begin{itemize}
+        \item SQL Database
+        \item Azure Blob Storage
+        \item Pub/Sub topic
+        \item GCP Project ID
+        \item Application Insights
+    \end{itemize}
+    Belangrijk is om in de Secret Manager bepaalde ``robot''-gebruikers rechten te geven tot deze secrets. Anders kunnen deze niet gelezen worden in de applicatie wat tot foutmeldingen leidt.
+    \item[Environment variables:] 
+    Nu de secrets beschikbaar zijn, is het noodzakelijk om alle nodige \textit{environment variables} toe te voegen. Dit houdt de volgende item in:
+    \begin{itemize}
+        \item CLOUD\_PROVIDER
+        \item SqlConnectionString
+        \item AzureWebJobsStorage
+        \item AzureStorageAccount
+        \item APPLICATIONINSIGHTS\_CONNECTION\_STRING
+        \item GCP\_PROJECT\_ID
+        \item PUBSUB\_TOPIC
+    \end{itemize}
+\end{description}
 
-%\subsection*{Definitie}
+Bij deze testopstelling is het belangrijk om te benadrukken dat er een beperking naar boven is gekomen voor de POST endpoint die gebruikt wordt door Pub/Sub. Aangezien de verwerkingslogica soms 4,5 minuten duurt, blijft de request naar de endpoint heel de tijd openstaan. Hierdoor wordt er tegen een timeout gelopen. In Pub/Sub en in Google Cloud Run werden de request timeouts verhoogd naar 600 seconden. Echter bleef diezelfde foutmelding plaatsvinden. De volgende zaken werden geprobeerd om het probleem op te lossen:
 
-%\subsection*{inhoud}
+\begin{itemize}
+    \item host.json manipuleren om de timeout te verhogen
+    \item fire-and-forget approach in de verwerkingslogica
+\end{itemize}
 
-\section{Definitie van de Testcases}
+%TODO: verder uitleggen
 
-\section{Validatie van de Meetopstelling}
+\section{Automatisering en Scripting}
+
+Om het experiment te automatiseren werd er een Python-script geschreven die de endpoints van beiden omgevingen kan triggeren volgens verschillende testscenario's. In dit script werden zoveel mogelijk criteria in een variabele gestoken, zodat een aanpassing in de opzet slechts op 1 plaats moet doorgevoerd worden. Dit script bevordert de reproduceerbaarheid van de benchmarks. Anderzijds werd er een library gebruikt om de benchmarks te visualiseren in de browser.
+
+%TODO: link naar Python script toevoegen + verder bechrijven wat er in het script staat en uitgevoerd wordt.
+
+\section{Methodologie en Uitvoering}
+
+\subsection{Definitie van de Testcases}
+
+\subsection{Uitvoeringsprotocol}
+
+\subsection{Validatie en Betrouwbaarheid}
