@@ -3,9 +3,9 @@
 
 Dit hoofdstuk beschrijft de realisatie van de Proof-of-Concept (PoC). Er wordt gestart met een technische analyse van de huidige toepassing binnen het probleemdomein, gevolgd door een verantwoording van de migratie naar een modern, container-native framework. Vervolgens wordt besproken hoe de testomgevingen in Azure Container Apps en Google Cloud Run opgezet zijn. Bij een PoC horen ook steeds technische uitdagingen en limitaties die aangekaart moeten worden, aangezien ze aanzetten tot bepaalde keuzes. Na dit cruciaal onderdeel volgt een bespreking van de strategieën die toegepast zijn om de meetdata te borgen. Tot slot worden de tools, uitvoeringsprotocol en testcases gedefinieerd om de lezer een volledig inzicht te geven in hoe de oplossingen zijn opgezet en gevalideerd.
 
-\section{Technische Analyse van de Artifact}
+\section{Technische Analyse van de Bestaande Toepassing}
 
-De huidige toepassing is tweeledig. Enerzijds hebben we een HttpTrigger die de synchrone verwerking voor zich neemt. Anderzijds hebben we een QueueTrigger die de asynchrone verwerking van de zware taak uitvoert. De reden van deze opzet is om de gebruiker zo snel mogelijk een antwoord te kunnen geven dat de generatie van de dataset begonnen is. Op deze manier moet er niet gewacht worden op de volledige verwerking van de set, wat meerdere minuten in beslag neemt. De asynchrone verwerking update de status van de dataset op bepaalde momenten in de verwerking. Deze status wordt om de 5 seceonden opgevraagd in het scherm waar het proces geactiveerd werd en maakt het mogelijk voor de gebruiker om tussendoor andere acties te doen in Agromanager. 
+De huidige toepassing is tweeledig. Enerzijds is er een HttpTrigger die de synchrone verwerking voor zich neemt. Anderzijds bevat het algoritme een QueueTrigger die de asynchrone verwerking van de zware taak uitvoert. De reden van deze opzet is om de gebruiker zo snel mogelijk een antwoord te kunnen geven dat de generatie van de dataset begonnen is. Op deze manier moet er niet gewacht worden op de volledige verwerking van de set, wat meerdere minuten in beslag neemt. De asynchrone verwerking update de status van de dataset op bepaalde momenten in de verwerking. Deze status wordt om de 5 seconden opgevraagd in het scherm waar het proces geactiveerd werd en maakt het mogelijk voor de gebruiker om tussendoor andere acties te doen in Agromanager. 
 
 \subsection{HttpTrigger} 
 
@@ -100,14 +100,14 @@ Bij de migratie kwam naar boven dat er aanpassingen in de code nodig waren. Dit 
 
 \subsection{Framework-transitie: .NET 8 Isolated Worker Model}
 
-De huidige toepassing draait op .NET Core 3.1. Deze versie is \textit{end of life} en wordt niet verder ondersteund. Anderzijds is deze versie ook voorzien van het In-Process model wat betekent dat de runtime en de worker in hetzelfde proces draaien. Dit zijn kenmerken die niet ideaal zijn voor een toepassing die moet draaien in een container. Hierdoor werd er gekozen om de applicatie te migreren naar .NET 8 met het Isolated Worker model. Dit scheidt het proces van de runtime met het proces van de worker. De testomgevingen bevinden zich in 2 verschillende cloudproviders. Hierdoor is het een vereiste dat de runtime en de applicatiecode geïsoleerd worden van elkaar, omdat elke provider een andere runtime heeft. .NET 8 is ook gebouwd met de focus op container-omgevingen, waardoor het logisch is om de bestaande toepassing te migreren naar deze versie. Deze keuze heeft er voor gezorgd dat er Nuget packages voor de SDK van de worker geïnstalleerd moesten worden, alsook werd de versie van Entity Framework geüpdatet naar een 8.x versie. Bij het testen van de code na transitie naar de nieuwe versie kwam ook boven dat er \textit{Includes} ontbraken bij het ophalen van data via EF. Door lazy loading bleven bepaalde gelinkte objecten leeg, waardoor NullRefernceException gegooid werd. 
+De huidige toepassing draait op .NET Core 3.1. Deze versie is \textit{end of life} en wordt niet verder ondersteund. Anderzijds is deze versie ook voorzien van het In-Process model wat betekent dat de runtime en de worker in hetzelfde proces draaien. Dit zijn kenmerken die niet ideaal zijn voor een toepassing die moet draaien in een container. Hierdoor werd er gekozen om de applicatie te migreren naar .NET 8 met het Isolated Worker model. Dit scheidt het proces van de runtime met het proces van de worker. De testomgevingen bevinden zich in 2 verschillende cloudproviders. Hierdoor is het een vereiste dat de runtime en de applicatiecode geïsoleerd worden van elkaar, omdat elke provider een andere runtime heeft. .NET 8 is ook gebouwd met de focus op container-omgevingen, waardoor het logisch is om de bestaande toepassing te migreren naar deze versie. Deze keuze heeft er voor gezorgd dat er Nuget packages voor de SDK van de worker geïnstalleerd moesten worden, alsook werd de versie van Entity Framework geüpdatet naar een 8.x versie. Bij het testen van de code na transitie naar de nieuwe versie kwam ook boven dat er \textit{Includes} ontbraken bij het ophalen van data via EF. Door lazy loading bleven bepaalde gelinkte objecten leeg, waardoor NullReferenceException gegooid werd. 
 
-\subsection{Depedency Injection}
+\subsection{Dependency Injection}
 
 De kracht van het Isolated Worker model is dat er volledige controle is over het proces van de worker. Dit model komt ook standaard met \textit{Dependency Injection (DI)}. Dit houdt in dat de verantwoordelijkheid van de aanmaak en opkuis van bepaalde instanties van objecten geregeld worden door de applicatie. Dit kan bekomen worden door de objecten te registreren in de \textit{Program.cs} file. Zo is het verschil tussen de huidige en de nieuwe toepassing dat de initialisatie van de database niet meer manueel gebeurt via een connection string, maar via de DI. In de code heeft dit als gevolg dat de logica van het Strategy Pattern niet meer aangeroepen moet worden met een using-statement, omdat de instantie van de database automatisch opgekuist wordt nadat het proces gedaan is.
 
 \subsection{Containerisatie: DockerFile}
-%TODO: verder uitdiepen
+%TODO: verder uitdiepen + Dockerfile toevoegen in de bijlagen en er naar refereren
 Beide testomgevingen moeten de code draaien in een container. Het is dus nodig om de code te laten builden naar een image die vervolgens gebruikt kan worden als blauwdruk. Deze image verzekert ook dat de code uitgevoerd wordt op dezelfde manier. Om de code op een container te laten draaien, is er nood aan een Dockerfile. Hierin wordt gedefinieerd wat er allemaal nodig is om de code op een correcte manier uit te voeren. Om de grootte van de image beperkt te houden, werd er gekozen om in de Dockerfile te werken met meerdere stages. Het beperken van de grootte heeft een positieve invloed op cold starts en is hierdoor heel belangrijk.
 
 \subsection{Platformonafhankelijke Messaging}
@@ -129,7 +129,7 @@ Om dit op te lossen werd de code aangepast zodat er geen aparte call meer nodig 
 \\ \\
 In de huidige toepassing in het probleemdomein vindt dit probleem vrijwel niet plaats, omdat de kans dat een dataset gelijktijdig gegenereerd wordt voor eenzelfde teelt in dezelfde omgeving heel klein is, dit komt in de praktijk bijna niet voor. Verder is dit ook een optimalisatie, aangezien het aantal API-calls is gereduceerd van twee naar één.
 
-\section{Opzet van de Testomgevingen}
+\section{Opzet van de Testomgevingen} %TODO: Azure Application Insights
 
 Dit onderdeel beschrijft de architectuur en inrichting van de experimentele infrastructuur voor dit onderzoek. Er wordt toegelicht welke middelen beschikbaar waren voor de inrichting van de omgevingen. Vervolgens wordt er gefocust op de componenten die gebruikt werden om de data te persisteren, de verzoeken in een wachtrij te zetten, de wijze waarop de image van de container gehost en gebuild werd. Ten slotte worden de omgevingen beschreven waar de containers op draaien. Dit geeft een duidelijk beeld over de architectuur en zal aantonen dat er bij elke keuze nagedacht is om de objectiviteit van het onderzoek te waarborgen. De keuze van bepaalde componenten werd beïnvloed door het feit dat Agromanager zich bevindt in het ecosysteem van Azure. Hierdoor werd getracht om zoveel mogelijk componenten die de huidige toepassing gebruikt, ook te gebruiken binnen het experiment. Dit zorgt ervoor dat dit onderzoek een realistisch resultaat geeft, aangezien bedrijven niet zo snel geneigd zijn om alle componenten van hun toepassing te migreren naar een andere provider. Op deze manier kan het bedrijf een voorzichtige migratie, indien zij het alternatieve platform als succesvol aanschouwen.
 
@@ -148,13 +148,13 @@ Een belangrijk onderdeel voor de testomgeving is een database om data persistent
 
 \begin{description}
     \item[Provisionering en Resource Group:] 
-    Er werd een nieuwe resource group aangemaakt binnen de subscription van Azure die geberuikt werd voor alle resources binnen Azure. De database werd ook toegewezen aan deze resource group. Als regio werd er gekozen voor \textit{West Europe}, omdat dit geografisch het dichtste aansluit met Agromanager. Dit voorkomt netwerkvertragingen.
+    Er werd een nieuwe resource group aangemaakt binnen de subscription van Azure die gebruikt werd voor alle resources binnen Azure. De database werd ook toegewezen aan deze resource group. Als regio werd er gekozen voor \textit{West Europe}, omdat dit geografisch het dichtste aansluit met Agromanager. Dit voorkomt netwerkvertragingen.
     \item[Database Tier:]
     Er werd gekozen voor een textit{free database offer} binnen Azure. Dit houdt in dat de eerste 100.000 vCore seconden en 32GB geheugen gratis zijn per maand. Verder werd gekozen om tegen vergoeding de database verder te gebruiken, indien de limiet van de gratis aanbieding bereikt is. Dit waarborgt dat de database beschikbaar blijft. Deze aanbieding was enkel geldig voor een serverless model die gebruik maakt van vCores. Dit heeft als nadeel dat de database inactief wordt na 1 uur van inactiviteit wat voor een cold start zorgt. Deze cold start kan omzeild worden en zal later aangekaart worden. Verder werd er gekozen voor een maximum van 2 vCores en een minimum van 0.5 vCores wat resulteert in een minimum werkgeheugen van 2.05 GB en een maximum verwerkingsgeheugen van 6GB. De maximale opslag van de gegevens werd op 1GB gezet, omdat dit ruim voldoende is voor de data die aanwezig zal zijn in de database. Anderzijds drukt het ook de kosten, indien de gratis limiet is overschreden. Tot slot werd de database niet aangeduid als \textit{zone redundant} en wel als \textit{Locally-redundant backup storage}.
     \item[Authenticatie:]
     Er werd gekozen om de authenticatie van de database via SQL Server Authentication (gebruikersnaam en wachtwoord) te regelen. Dit was voornamelijk noodzakelijk voor Google Cloud Run, omdat dit niet zo eenvoudig overweg kan met Azure AD Managed Identities. Ook is het makkelijker om via een universele connection string de database connectie te regelen via een Environment Variable voor beide omgevingen. 
     \item[Beveiliging:]
-    Om de database via Microsoft SQL Server Management Studio te kunnen raadplegen, was het nodig om het IP-adres van de client (laptop) toe te voegen aan de firewall-regels van SQL Server waarop de database draait. De firewall werd ook zo geconfigureerd dat Azure sevices toegang kregen, zonder expliciete regels te moeten definiëren. Voor Google Cloud Run moest er wel een work-around voorzien worden, omdat dit geen vast IP-adres toegewezen krijgt. Alvorens de testruns voor Google Cloud Run uit te voeren, werd eerst een extra firewall-regel toegevoegd die de deur volledig openzet. Zo werd de start IPv4 adres op 0.0.0.0 gezet en de eind IPv4 adres op 255.255.255.255. Nadat de tests waren uitgevoerd, werd deze regel meteen terug verwijderd. Dit werd op deze manier geregeld, omdat dit niet binnen de afgebakende scope van dit onderzoek lag. 
+    Om de database via Microsoft SQL Server Management Studio te kunnen raadplegen, was het nodig om het IP-adres van de client (laptop) toe te voegen aan de firewall-regels van SQL Server waarop de database draait. De firewall werd ook zo geconfigureerd dat Azure services toegang kregen, zonder expliciete regels te moeten definiëren. Voor Google Cloud Run moest er wel een work-around voorzien worden, omdat dit geen vast IP-adres toegewezen krijgt. Alvorens de testruns voor Google Cloud Run uit te voeren, werd eerst een extra firewall-regel toegevoegd die de deur volledig openzet. Zo werd de start IPv4 adres op 0.0.0.0 gezet en de eind IPv4 adres op 255.255.255.255. Nadat de tests waren uitgevoerd, werd deze regel meteen terug verwijderd. Dit werd op deze manier geregeld, omdat dit niet binnen de afgebakende scope van dit onderzoek lag. 
     \item[Schema en Databasetabellen:]
     In de code werd er gebruikgemaakt van Entity Framework. De databasetabellen werden gedefinieerd via een code-first approach. Dit betekent dat de eigenschappen van de tabellen via de code gezet werden. Voor deze entiteiten werden er configuration-klassen voorzien om verdere instellingen specifiek voor de tabel in te stellen. Vervolgens werd er een migration-bestand aangemaakt die de schema en tabellen van de database kan toepassen op een database. Bij elke aanpassing aan de database entiteiten in de code, werd er een nieuwe migration-bestand aangemaakt en opnieuw toegepast op de database, zodat dit up-to-date was.
 \end{description}
@@ -213,6 +213,8 @@ Om de asynchrone verwerking op een schaalbare manier uit te voeren in Google Clo
 
 \subsection{Container Beheer}
 
+%TODO: YML-file toevoegen in de bijlagen
+
 Voor de Container Registry werd er gekozen voor een centrale manier in plaats van een registry op één van de platformen. Dit houdt de afstand tussen de image en beide platformen hetzelfde. Dit waarborgt dat de cold start die veroorzaakt wordt bij het opnieuw initialiseren van de container en waarbij de image opnieuw gepulled wordt van de registry niet positief beïnvloedt wordt voor één van de omgevingen. 
 \\
 \\
@@ -251,11 +253,11 @@ Dit onderdeel beschrijft hoe de testdata tot stand kwam en geeft in detail weer 
     \item[GpsDatasets:] 
     Er werden 2 datasets aangemaakt. Eén voor een Shapefile-variant en een andere als CSV-variant. Voor elke set werden dezelfde waarden aangeduid in het aanmaakscherm. Enkel het type verschilt. Tot slot werden er bij de dataset voor Shapefile 7 verschillende Shapefile-bestanden toegevoegd. Dit werd ook gedaan voor de CSV-dataset, maar dan met CSV-bestanden. Elk bestand staat voor een specifieke teelt.
     \item[Verwerking:] 
-    Dit resulteert erin dat er een iteratie gebeurt per teelt. Per teelt wordt er geloopt over alle bestanden die toegevoegd zijn. Stel dat elke teelt 3000 boompunten gemiddeld heeft. Dit wil zeggen dat de bronbestanden ook data bevat voor gemiddeld 3000 boompunten. Als we nu de formule (\ref{frm:iteraties}) toepassen:
+    Dit resulteert erin dat er een iteratie gebeurt per teelt. Per teelt wordt er geloopt over alle bestanden die toegevoegd zijn. Stel dat elke teelt 3000 boompunten gemiddeld heeft. Dit wil zeggen dat de bronbestanden ook data bevat voor gemiddeld 3000 boompunten. Om na te gaan hoeveel iteraties er uitgevoerd worden, wordt de formule (\ref{frm:iteraties}) toegepast:
     \begin{equation}
         7 * 7 * 3000 * 3000 = 441.000.000
     \end{equation}
-    In dit geval wordt er in de code voor 1 testrun 441.000.000 iteraties gedaan.
+    In dit geval wordt er in de code voor 1 testrun 441.000.000 keer geïtereerd.
 \end{description}
 
 Het bekomen van deze dataset werd op een iteratieve manier gedaan. Zo werd er per toevoeging van een teelt en het respectievelijke bronbestand gekeken welke impact dit had op verwerkingstijd van de huidige toepassing in het probleemdomein. Hierbij werd bij het uiteindelijk resultaat gefocust op een verwerkingstijd tussen 4 en 6 minuten. Deze tijdspanne fungeert als \textit{baseline} voor het onderzoek.
@@ -350,7 +352,7 @@ Nadat de container app aangemaakt is, werden er nog bepaalde schaalregels aangep
 Voor de authenticatie werd de secret voor Azure Service Bus ingesteld als \textit{connection}.
 \\
 \\
-Er moet ook nog benadrukt worden dat de huidige \textit{revision} niet automatisch de laaste versie van de image draait. Wanneer er een aanpassing aan de code is gebeurd en Github Actions heeft de image opnieuw gebuild en gepushed aar GHCR, dan moet er nog altijd een nieuwe revision opgestart worden. Dit voorkomt dat een applicatie op productie meteen aangepast zou worden, wat tot fouten of ongewenste effecten kan zorgen. Op deze manier wordt een gecontroleerde update van de applicatie gewaarborgd.
+Er moet ook nog benadrukt worden dat de huidige \textit{revision} niet automatisch de laatste versie van de image draait. Wanneer er een aanpassing aan de code is gebeurd en Github Actions heeft de image opnieuw gebuild en gepushed aar GHCR, dan moet er nog altijd een nieuwe revision opgestart worden. Dit voorkomt dat een applicatie op productie meteen aangepast zou worden, wat tot fouten of ongewenste effecten kan zorgen. Op deze manier wordt een gecontroleerde update van de applicatie gewaarborgd.
 \\ 
 \\
 Tijdens het aanpassen van de applicatiecode en het opzetten van een nieuwe revision, viel op dat Azure Container Apps soms niet doorheeft dat er een nieuwe versie van de image is. Dit doet vermoeden dat er caching gebruikt wordt. Om dit te omzeilen, werd er een \textit{environment variable} gedefinieerd, die een versienummer voorstelt. Door dit aan te passen bij elke nieuwe revision, haalt Azure Container Apps wel de laatste versie van de image op.
@@ -380,9 +382,9 @@ De proxy om de image op te halen uit GHCR is aangemaakt en bijgevolg kan de cont
     \item[Naam en Regio:] 
     Als naam werd \textit{dataset-generator} ingevuld. Voor de regio werd \textit{europe west1 (Belgium)} geselecteerd en is gelijkaardig aan de regio die gekozen werd bij ACA. Hierdoor is netwerkvertraging evenredig, wat de neutraliteit bevordert. 
     \item[Authenticatie:] 
-    De applicatie is publiekelijke beschikbaar, doordat \textit{Allow public access} aangeduid werd. Dit was de meest pragmatische keuze voor een tijdelijk testomgeving. De endpoint moet geactiveerd kunnen worden via een script en een strikte beveiliging zou de benchmarking bemoeilijken. Dit is natuurlijk niet aangeraden in een productie-omgeving.
+    De applicatie is publiekelijk beschikbaar, doordat \textit{Allow public access} aangeduid werd. Dit was de meest pragmatische keuze voor een tijdelijk testomgeving. De endpoint moet geactiveerd kunnen worden via een script en een strikte beveiliging zou de benchmarking bemoeilijken. Dit is natuurlijk niet aangeraden in een productie-omgeving.
     \item[Billing:] 
-    Oorspronkelijk werd er gekozen voor \textit{Request-based}. Na de eerste testruns werd duidelijk dat er meer nood was aan \textit{Instance-based}, omdat de request in de toepassing niet zo lang duurt. Dit gaf een langere verwerkingstijd, doordat de CPU vermindert werd nadat de request verwerkt was door het in een wachtrij te plaatsen. 
+    Oorspronkelijk werd er gekozen voor \textit{Request-based}. Na de eerste testruns werd duidelijk dat er meer nood was aan \textit{Instance-based}, omdat de request in de toepassing niet zo lang duurt. Dit gaf een langere verwerkingstijd, doordat de CPU verminderd werd nadat de request verwerkt was door het in een wachtrij te plaatsen. 
     \item[Schalen:] 
     Net zoals bij ACA is er nood aan automatische schaling. Daarom werd \textit{Auto scaling} geselecteerd. Bij \textit{minimum instances} werd 0 ingevuld, zodat \textit{scale-to-zero} mogelijk is. Bij \textit{maximum instances} werd geprobeerd om, net zoals bij ACA, 30 instanties te zetten. Dit was echter niet mogelijk door de quota die verbonden was aan het gratis account. Hierop moet dus geanticipeerd worden bij het uitvoeren van 30 testruns.
     \item[Ingress:] 
@@ -425,22 +427,85 @@ De proxy om de image op te halen uit GHCR is aangemaakt en bijgevolg kan de cont
 Bij deze testopstelling is het belangrijk om te benadrukken dat er een beperking naar boven is gekomen voor de POST endpoint die gebruikt wordt door Pub/Sub. Aangezien de verwerkingslogica soms 4,5 minuten duurt, blijft de request naar de endpoint heel de tijd openstaan. Hierdoor wordt er tegen een timeout gelopen. In Pub/Sub en in Google Cloud Run werden de request timeouts verhoogd naar 600 seconden. Echter bleef diezelfde foutmelding plaatsvinden. De volgende zaken werden geprobeerd om het probleem op te lossen:
 
 \begin{itemize}
-    \item host.json manipuleren om de timeout te verhogen
+    \item host.json manipuleren om de timeout te verhogen in de applicatie
     \item fire-and-forget approach in de verwerkingslogica
 \end{itemize}
 
-%TODO: verder uitleggen
-
-\section{Automatisering en Scripting}
-
-Om het experiment te automatiseren werd er een Python-script geschreven die de endpoints van beiden omgevingen kan triggeren volgens verschillende testscenario's. In dit script werden zoveel mogelijk criteria in een variabele gestoken, zodat een aanpassing in de opzet slechts op 1 plaats moet doorgevoerd worden. Dit script bevordert de reproduceerbaarheid van de benchmarks. Anderzijds werd er een library gebruikt om de benchmarks te visualiseren in de browser.
-
-%TODO: link naar Python script toevoegen + verder bechrijven wat er in het script staat en uitgevoerd wordt.
+Deze maatregelen brachten geen oplossing. Het doet vermoeden dat de architectuur van deze opstelling niet ideaal is voor een langlopend proces, aangezien de timeouts van de cloudomgeving wel langere verwerkingstijden tolereren. Om te waarborgen dat de geregistreerde benchmarks niet overschreven werden door een retry, werd er geanticipeerd in de code. Er werd gecontroleerd of de geregistreerde benchmark reeds een eindtijd had voor de Queue-verwerking en wanneer dit het geval was, werd het proces meteen afgebroken door een \textit{return}-statement.
 
 \section{Methodologie en Uitvoering}
 
+Dit bespreekt welke benchmarks er uitgevoerd zijn en waarom dit op deze manier gedaan is. We benoemen bij elke testcase op welke prestatiecriteria er gefocust wordt om tot een resultaat te komen en wat de randvoorwaarden zijn. Vervolgens wordt een protocol gedefinieerd voor de uitvoeringen, zodat bij elke uitvoering er een vast stappenplan is om te waarborgen dat resultaten niet beïnvloed worden door variaties in benchmarking. Tot slot wordt aangegeven hoe de betrouwbaarheid van de resultaten verzekerd wordt.
+
 \subsection{Definitie van de Testcases}
+
+\subsubsection{Warm Start}
+
+Deze testcase verzamelt informatie over hoe de prestaties bij beiden omgevingen zijn wanneer de containers warm draaien. Om dit te bekomen worden er 31 requests serieel verstuurd naar Azure Container Apps en vervolgens ook naar Google Cloud Run. Het resultaat van de eerste aanroep naar elke omgeving wordt verwijderd uit de lijst om zo de cold start die mogelijks plaatsvindt te elimineren.
+
+\subsubsection{Cold Start}
+
+Om een beeld te krijgen van hoe efficiënt de platformen omgaan met een cold start wordt er 30 keer een request verstuurd per testomgeving. Hierbij is het per verwerkingsaanvraag een vereiste dat de container inactief is. In Azure Container Apps staat vast wanneer deze service inactief wordt door de \textit{cooling down}-instelling. Bij Google Cloud Run kan dit niet echt ingesteld worden, maar is er wel een manier om dit te forceren door voor elke testrun een nieuwe \textit{revision} te deployen. Aangezien er  gemeten moet worden hoe snel de service op beide platformen een instantie kan opstarten bij een inactieve staat, is het noodzakelijk om andere ruis zoveel mogelijk uit te sluiten. Netwerkvertraging is hier een voorbeeld van. Om dit te beperken worden er per testopstelling 10 requests ´s morgens, 10 ´s middags en 10 ´s avonds uitgevoerd. Dit vangt de variatie op in internetverkeer en datacenterbelasting. Bij deze testcase wordt er enkel gekeken naar de vertraging door container-activatie. Daarom wordt bij de benchmarks gekozen om het bestandstype hetzelfde te houden.
+
+\subsubsection{Schaalbaarheid}
+
+In dit experiment wordt gelogd hoe performant de services schalen bij een \textit{burst-load}. Om dit te bekomen wordt er per platform 10 keer een groep van 5 berichten tegelijk in de wachtrij van de desbetreffende applicatie geplaatst. Hierdoor wordt de HttpTrigger omzeild en wordt er puur gekeken naar het schaalmechanisme van de service. In deze testcase is het bestandstype niet relevant en kan dit vrij gekozen worden. Om consistentie te waarborgen, wordt wel aangeraden om éénzelfde type te kiezen over alle \textit{burst-load}-benchmarks heen.
+
+\subsubsection{Bestandstypes}
+
+Deze testcase volgt hetzelfde proces als de ``Warm Start''-test. 31 runs, waarbij de eerste verwijderd wordt uit de resultaten om een warme start te garanderen. Echter wordt in deze context het proces herhaald voor beide bestandstypes. Deze records worden gebruikt om te bepalen of de datastructuur van de bronbestanden invloed heeft op de rekenkracht of I/O-efficiëntie. De resultaten van de CSV-metingen worden vergeleken met die van de Shapefile-metingen om tot een conclusie te komen.
 
 \subsection{Uitvoeringsprotocol}
 
+Het uitvoeringsprotocol bevordert de reproduceerbaarheid van de experimenten door een strikte volgorde van stappen te definiëren:
+
+\begin{description}
+    \item [Pre-check:] Er wordt gecontroleerd of alle queues leeg zijn en of beide services in een inactieve staat zijn (nul instanties).
+    \item [Automatisering:] Het Python-script wordt gestart en de testcase wordt uitgevoerd. Tijdens de verwerking van de aanvragen wordt gemonitord hoe alles verloopt en of er geen foutmeldingen of andere inconsistenties zijn.
+    \item [Foutafhandeling:] Bij het plaatsvinden van een error, wordt de fout verholpen en worden de benchmarkresultaten gereset voor deze testcase. Vervolgens wordt er terug gestart bij de ``pre-check''-stap.
+    \item [Intervalbeheer:] Voor de \textit{cold start}-testcase hanteert het script een verplichte pauze van 120 seconden (voor Azure) of triggert het een \textit{revision update} via de CLI (voor Google) tussen elke run.
+    \item [Resultatenverzameling] Na het voltooien van de testruns wordt de ruwe data (start- en eindtijden) gelezen uit SQL Database en aangevuld door extra \textit{metrics} via Kusto-queries (KQL) uit Application Insights.
+\end{description}
+
 \subsection{Validatie en Betrouwbaarheid}
+
+Om de betrouwbaarheid van de resultaten te garanderen, zijn de volgende maatregelen genomen:
+
+\begin{description}
+    \item [Statistische Relevantie:] Per variabele wordt een steekproefgrootte van $n=30$ gehanteerd om een normaalverdeling te bekomen en de invloed van uitschieters te beperken.
+    \item [Isolatie:] Tijdens de runs vinden er geen andere intensieve operaties plaats op de database binnen de Agromanager-omgeving. Dit voorkomt negatieve beïnvloeding op de prestaties van de CPU.
+    \item [Synchronisatie:] De \textit{Lock Duration} en \textit{Request Timeouts} op beide platformen zijn ingesteld op 600 seconden om voortijdige onderbrekingen van de $O(n^4)$ berekening te voorkomen.
+    \item [Resources:] Op beide omgevingen werden alle instellingen zo gelijk mogelijk ingesteld. Hierbij zijn CPU en geheugen de voornaamste parameters.
+\end{description}
+
+\section{Automatisering van Benchmarks}
+
+Om alles objectief te kunnen vergelijken en de benchmarks reproduceerbaar te maken, werd er een script geschreven in Python. Dit script dient als centraal punt in het experiment en orchestreert alle testcases. Het voordeel hiervan is dat fouten tijdens de uitvoering van alle testruns (194) worden uitgesloten. Zo wordt gewaarborgd dat elke aanvraag onder exact dezelfde condities wordt verstuurd, waarbij zaken zoals pauzetijden en de inhoud van de berichten strikt beheerd worden.
+
+%TODO: toevoegen Python script + refereren
+
+\subsection{Architectuur en Gebruikersinterface}
+
+Het script is gebouwd met het \textit{Streamlit}-framework. Dit biedt een handige interface waarmee de experimenten gestart en gemonitord kunnen worden. In de code is alles modulair opgezet. De logica voor de verschillende testcases zit in aparte functies. Dit houdt de code leesbaar en zorgt ervoor dat instellingen op één plaats aangepast kunnen worden. Om de resultaten tijdens het testen meteen te kunnen volgen, wordt gebruik gemaakt van de \textit{Pandas} en \textit{Plotly} libraries. Hierdoor worden uitschieters of andere inconsistenties in de verwerkingstijd snel opgemerkt aan de hand van een grafiek.
+
+\subsection{Traceability}
+
+%TODO: inline code tonen van deze functie
+
+In het script wordt de \textit{W3C Trace Context} standaard gebruikt. Voor elke request die het script verstuurt, wordt er een unieke \textit{traceparent} header gegenereerd. Deze unieke ID reist mee door het hele proces: van het Python-script naar de cloudomgevingen en uiteindelijk tot in de SQL-database. Deze ID is cruciaal voor de analyse. Het zorgt ervoor dat de tijd die lokaal gemeten wordt, rechtstreeks gekoppeld kan worden aan de logs in de \textit{BenchmarkRun}-tabel en de gedetailleerde metrics in \textit{Application Insights}. Zo kan er met behulp van KQL-queries de specifieke prestaties van één bepaalde run teruggevonden worden.
+
+\subsection{Implementatie van de Uitvoeringsprotocollen}
+
+In het script zijn de afspraken uit de methodologie vertaald naar concrete code:
+
+\begin{description}
+    \item [Intervalbeheer:] Bij de \textit{cold start}-metingen voor Azure Container Apps werd er een pauze van 120 seconden ingebouwd via de \textit{time.sleep()}-functie. Dit is ruim voldoende om de \textit{cooldown period} van 60 seconden te overbruggen, zodat de container gegarandeerd naar nul is geschaald.
+    \item [Geforceerde Cold Starts in GCR:] Omdat Google Cloud Run containers vaak lang "warm" houdt, wordt de \textit{Google Cloud SDK} gebruikt. Na elke run voert het script via een \textit{subprocess} een commando uit naar de CLI van \textit{gcloud} om een nieuwe revisie geforceerd te deployen. Dit zorgt ervoor dat de oude instantie(s) meteen worden afgesloten en de volgende aanvraag een echte cold start is.
+    \item [Simulatie van Burst Load:] Om de schaalbaarheid te testen, wordt de \textit{ThreadPoolExecutor} gebruikt. Hiermee worden er parallel 5 berichten in de wachtrij geplaatst. Dit simuleert een piekmoment en laat zien hoe agressief KEDA (bij Azure) en het Pub/Sub-mechanisme (bij Google) nieuwe instanties bijschakelen.
+\end{description}
+
+%TODO: toevoegen gcloud commands 
+
+\subsection{Validatie en Database-interactie}
+
+Voordat een testreeks start, doet het script eerst een \textit{pre-check}. Omdat de Azure SQL Database serverless is, wordt eerst een dummy-connectie verstuurd om de database "wakker te maken". Hiermee wordt voorkomen dat de opstarttijd van de database de eerste meting vervuilt. Zodra de testruns klaar zijn, maakt het script via de \textit{pyodbc}-library verbinding met de database. De tijden die daar geregistreerd zijn, worden opgehaald en naast de lokaal gemeten tijden gelegd. Deze dubbele check is een extra zekerheid dat de data klopt voordat er begonnen wordt aan uiteindelijke analyse.
