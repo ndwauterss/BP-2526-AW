@@ -5,11 +5,14 @@
 \chapter{Conclusie}%
 \label{ch:conclusie}
 
-% TODO: Trek een duidelijke conclusie, in de vorm van een antwoord op de
-% onderzoeksvra(a)g(en). Wat was jouw bijdrage aan het onderzoeksdomein en
-% hoe biedt dit meerwaarde aan het vakgebied/doelgroep? 
-% Reflecteer kritisch over het resultaat. In Engelse teksten wordt deze sectie
-% ``Discussion'' genoemd. Had je deze uitkomst verwacht? Zijn er zaken die nog
-% niet duidelijk zijn?
-% Heeft het onderzoek geleid tot nieuwe vragen die uitnodigen tot verder 
-%onderzoek?
+Dit onderzoek toont aan dat een overstap van de bestaande Azure Function met App Service Plan naar een container-gebaseerde architectuur veel voordelen biedt voor de CPU-intensieve en seizoensgebonden workload van Agromanager. Hoewel beide alternatieven de baseline overtreffen, komt Azure Container Apps (ACA) als de superieure oplossing naar voren.
+
+Op vlak van efficiëntie en prestaties is ACA de absolute winnaar. Deze cloud-oplossing is bij de warm start testrun bijna 50\% sneller dan Google Cloud Run (GCR) en de huidige Azure Function bij het verwerken van CSV-bestanden. Ook bij Shapefiles blijft ACA de efficiëntste verwerker. Dit is niet onverwacht. De Azure Function draait in een geoptimaliseerde omgeving, terwijl GCR data moet ophalen en wegschrijven naar services van een concurrerende provider via het internet, wat voor vertragingen zorgt bij de verwerking.
+
+GCR beschikt wel over een stabielere message broker die efficiënter containers toewijst bij piekbelasting, maar ACA compenseert deze tragere wachtrijverwerking door de snellere executie van de opdracht. Daarnaast ondervinden beide container-omgevingen een opstartvertraging wanneer ze volledig naar 0 geschaald zijn. GCR kan beter overweg met een start van 0, maar hoewel beide platformen deze vertraging compenseren binnen de totale doorlooptijd, blijft deze cold start een grote tekortkoming voor Agromanager.
+
+Op financieel vlak bieden beide oplossingen een \textit{scale-to-zero} aan die onnodige kosten voorkomt in de inactieve perioden. Voor 1000 aanvragen is GCR iets goedkoper door de lagere kosten van de container registry. Toch biedt dit onderzoek waardevolle inzichten voor bedrijven die een migratie van Azure naar Google overwegen zonder hun volledige tech stack te veranderen, en brengt het de stappen in kaart om oudere .NET Core 3.1-toepassingen te moderniseren naar een container-infrastructuur.
+
+Mijn advies aan Agromanager luidt om de bestaande toepassing te migreren naar \textbf{Azure Container Apps}, gebaseerd op de superieure verwerkingsprestaties en de minder complexe migratie met een kleinere éénmalige kost. Bovendien voorkomt dit dat de kosten voor uitgaand netwerkverkeer (Egress) zwaar oplopen bij het overzetten van meerdere functies naar deze nieuwe manier.
+
+Als aanbeveling voor vervolgonderzoek moet er gekeken worden naar een vermindering van de opstartvertraging. Hierbij is het interessant om de synchrone verwerking af te splitsen van de asynchrone achtergrondverwerking en deze in aparte container apps te laten draaien, zodat de container-image lichter wordt. Tot slot kan het omvormen van de HttpTrigger naar een Web API-endpoint gekoppeld via Dapr ook interessant zijn om zo tot een robuuster systeem te komen.
